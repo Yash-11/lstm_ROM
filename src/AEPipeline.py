@@ -1,10 +1,9 @@
 """
-class for model training and testing 
+class for Auto-Encoder training
 """
 
 import pdb
 from turtle import pd
-from unicodedata import decimal
 import h5py
 import numpy as np
 import torch as T
@@ -16,7 +15,7 @@ import os
 from os.path import dirname, realpath, join
 
 
-class ModelPipeline():
+class AEPipeline():
 
     def __init__(self, Model, hyperParams, experPaths, rawData, dataset, args):
         """
@@ -39,7 +38,7 @@ class ModelPipeline():
 
     
     def saveModel(self, epoch, optimizer, scheduler, losses):
-        PATH = join(self.path.weights, f'weights_epoch{epoch}.tar')
+        PATH = join(self.path.weights, f'AEweights_epoch{epoch}.tar')
         state = {'epoch': epoch,
                  'model_state_dict': self.model.state_dict(),
                  'optimizer_state_dict': optimizer.state_dict(),
@@ -55,14 +54,14 @@ class ModelPipeline():
         plt.ylabel('MSE')
         plt.title('Training Loss')
         plt.yscale("log")
-        plt.savefig(join(self.path.run, f'Loss_plot.png'))
+        plt.savefig(join(self.path.run, f'AE_Loss_plot.png'))
         # plt.close()
 
 
     def loadModel(self, epoch, optimizer=None, scheduler=None, losses=None):
         """Loads pre-trained network from file"""
         try:
-            PATH = join(self.path.weights, f'weights_epoch{epoch}.tar')
+            PATH = join(self.path.weights, f'AEweights_epoch{epoch}.tar')
             checkpoint = T.load(PATH, map_location=T.device(self.args.device))
             checkpoint_epoch = checkpoint['epoch']
             print(f'Found model at epoch: {checkpoint_epoch}')
@@ -100,7 +99,7 @@ class ModelPipeline():
             target = data[1]  # (currentBatchSize, latentDim)
 
             pred, _ = self.model(input)  # (currentBatchSize, latentDim)
-            loss = self.loss(_[0][0], target)   
+            loss = self.loss(pred, target)   
                                               
             loss.backward()
             optimizer.step()
@@ -113,21 +112,21 @@ class ModelPipeline():
         hp = self.hp
 
         train_dataset = self.dataset(self.rawData, 'train', self.path, hp, device=self.args.device, info=self.info)
-        train_loader = DataLoader(train_dataset, batch_size=hp.batchSizeTrain, shuffle=False)  
+        train_loader = DataLoader(train_dataset, batch_size=hp.batchSizeTrainAE, shuffle=True)
 
-        optimizer = T.optim.Adam(self.model.parameters(), lr=hp.lr)
+        optimizer = T.optim.Adam(self.model.parameters(), lr=hp.lrAE, weight_decay=1e-5)
         lr_lambda = lambda epoch: 1 ** epoch
         scheduler = LambdaLR(optimizer, lr_lambda=lr_lambda)
         losses = []
 
         # ------------------- load model from checkpoint -----------------------
-        if hp.epochStartTrain:
-            optimizer, scheduler, losses = self.loadModel(hp.epochStartTrain, optimizer, scheduler, losses)
+        if hp.epochStartTrainAE:
+            optimizer, scheduler, losses = self.loadModel(hp.epochStartTrainAE, optimizer, scheduler, losses)
 
-        for epoch in range(hp.epochStartTrain+1, hp.numIters):         
+        for epoch in range(hp.epochStartTrainAE+1, hp.numItersAE):         
 
             epochLr = optimizer.param_groups[0]['lr']  
-            if epoch % hp.logInterval == 0: self.info(f'\n \n({epoch:02.0f}), lr: {epochLr:.6f}')
+            if epoch % hp.logIntervalAE == 0: self.info(f'\n \n({epoch:02.0f}), lr: {epochLr:.6f}')
             
             loss = self.trainingEpoch(optimizer, train_loader, epoch)
             losses.append(loss.item())
@@ -136,11 +135,11 @@ class ModelPipeline():
             scheduler.step()
 
             # ------------------- Save model periodically ----------------------
-            if (epoch % hp.checkpointInterval == 0) and (epoch > 0):
+            if (epoch % hp.checkpointIntervalAE == 0) and (epoch > 0):
                 self.saveModel(epoch, optimizer, scheduler, losses)
 
             # ------------------------ print progress --------------------------
-            if epoch % hp.logInterval == 0: self.info(f'   ({epoch}) Training loss: {loss:.8f}')
+            if epoch % hp.logIntervalAE == 0: self.info(f'   ({epoch}) Training loss: {loss:.8f}')
 
     
     def savePredictions(self, predData, epoch, trainBool):
@@ -154,21 +153,15 @@ class ModelPipeline():
             f.create_dataset('target', data=targetArray.detach().cpu().numpy())
         print(f'pred data saved at {predData_Path}')
     
-
-    def rescale(self, x, max, min):
-        a = -1; b = 1
-        x = (x-a)*(max- min)/(b-a)+min
-        return x
-    
     
     def test(self):
         hp = self.hp
         
         test_dataset = self.dataset(self.rawData, 'test', self.path, hp, device=self.args.device, info=self.info)
-        test_loader = DataLoader(test_dataset, batch_size=hp.batchSizeTest, shuffle=False)
+        test_loader = DataLoader(test_dataset, batch_size=hp.batchSizeTestAE, shuffle=False)
 
         # ------------------------ Load saved weights --------------------------
-        epoch = hp.loadWeightsEpoch
+        epoch = hp.loadAEWeightsEpoch
         self.loadModel(epoch)
         self.model.eval()
 
@@ -176,27 +169,14 @@ class ModelPipeline():
 
         for batchIdx, data in enumerate(test_loader):
 
-            input = data[0]  # (currentBatchSize, seq_len, latentDim)
-            target = data[1]  # (currentBatchSize, timeStepsUnroll, latentDim)
+            input = data[0]  # (currentBatchSize, imDim)
+            target = data[1]  # (currentBatchSize, imDim)
 
-            last_N_seqs = input
-            flag = 0
-            for i in range(hp.timeStepsUnroll):
-                _, pred_i = self.model(last_N_seqs)  # (currentBatchSize, latentDim)
-                pred_i = pred_i[0][0]
-                last_N_seqs = T.cat((last_N_seqs[:, 1:], pred_i[:, None]), dim=1)
+            pred, _ = self.model(input)  # (currentBatchSize, latentDim)
 
-                if flag:
-                    pred = T.cat((pred, pred_i[:, None]), dim=1)  
-                else:
-                    pred = pred_i[:, None]
-                    flag = 1
-
-            pred = self.rescale(pred, test_dataset.max, test_dataset.min)
-            target = self.rescale(target, test_dataset.max, test_dataset.min)
-
-            loss = T.mean(T.abs(pred - target)/target, 2)*100
-            self.info(f'({batchIdx}) Testing loss: {loss}')
+            
+            loss = T.mean(T.abs(pred - target)/target, 2)
+            self.info(f'({batchIdx}) Testing loss: {loss*100}')
 
             predLs.append(pred)
             dataLs.append(target)
@@ -204,3 +184,74 @@ class ModelPipeline():
         predData = T.cat(predLs, dim=0), T.cat(dataLs, dim=0)  # (numSampTest, timeStepModel, M, numNodes)
 
         self.savePredictions(predData, epoch, False) 
+
+
+    def saveLatentVecs(self, LatentVecs):
+        path = join(self.path.run, f'LatentVecs.npy')
+        np.save(path, LatentVecs.detach().cpu().numpy())
+
+    
+    def generateLatentVecs(self,):
+        hp = self.hp
+        
+        encode_dataset = self.dataset(self.rawData, 'encode', self.path, hp, device=self.args.device, info=self.info)
+        encode_loader = DataLoader(encode_dataset, batch_size=hp.batchSizeEncode, shuffle=False)
+
+        # ------------------------ Load saved weights --------------------------
+        epoch = hp.loadAEWeightsEpoch
+        self.loadModel(epoch)
+        self.model.eval()
+
+        LatentVecs = []
+
+        for batchIdx, data in enumerate(encode_loader):
+
+            input = data  # (currentBatchSize, imDim)
+            _, _LatentVecs = self.model(input)  # (currentBatchSize, latentDim)
+            LatentVecs.append(_LatentVecs)
+
+        LatentVecs = T.cat(LatentVecs, 0)
+        self.saveLatentVecs(LatentVecs)
+
+
+    def saveOutputs(self, pred, target):
+        info = self.hp.predData_Info if hasattr(self.hp, 'predData_Info') else ''
+        predData_Path = join(self.path.run, f'predHDataTest_epoch{self.hp.loadWeightsEpoch}{info}.hdf5')
+
+        with h5py.File(predData_Path, 'w') as f:
+            f.create_dataset('pred', data=pred.detach().cpu().numpy())
+            f.create_dataset('target', data=target.detach().cpu().numpy())
+        print(f'pred data saved at {predData_Path}')
+
+
+    def denormalize(self, data, mean, std):
+        return data*std + mean
+    
+
+    def decodeLatentVecs(self,):
+
+        hp = self.hp
+
+
+        # ----------------- Load predicted Latent Vectors ----------------------
+        info = self.hp.predData_Info if hasattr(self.hp, 'predData_Info') else ''
+        name = f'predDataTest_epoch{hp.loadWeightsEpoch}{info}.hdf5'
+        predData = h5py.File(join(self.path.run, name), 'r')
+
+        predLv = T.tensor( predData['pred'][:], dtype=T.float32).to(self.args.device) 
+        targetLv = T.tensor( predData['target'][:], dtype=T.float32).to(self.args.device) 
+
+        # ------------------------ Load saved weights --------------------------
+        epoch = hp.loadAEWeightsEpoch
+        self.loadModel(epoch)
+        self.model.eval()
+
+        # LatentVecs = []
+        
+        pred = self.model(predLv)
+        target = self.model(targetLv)
+
+        pred = self.denormalize(pred, self.hp.meanAE, self.hp.stdAE)
+        target = self.denormalize(target, self.hp.meanAE, self.hp.stdAE)
+
+        self.saveOutputs(pred, target)

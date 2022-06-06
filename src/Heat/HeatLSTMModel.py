@@ -18,16 +18,23 @@ import os.path as osp
 
 class Model(nn.Module):
 
-    def __init__(self, hp, hiddenDim, args):
+    def __init__(self, hp, args):
         super(Model, self).__init__()
 
         self.info = args.logger.info
         self.device = args.device
         self.args = args
         self.hiddenDim = hp.hiddenDim
+        self.num_lstm_layers = 1
+        self.resetHidden = True
 
-        self.rl = nn.LSTM(hp.latentDim, hp.hiddenDim, num_layers=1, batch_first=True)
-        self.l1 = nn.Linear(hp.hiddenDim, hp.latentDim)
+        self.rl = nn.LSTM(hp.latentDim, hp.hiddenDim, 
+                        num_layers=self.num_lstm_layers, 
+                        batch_first=True)
+        # self.l1 = nn.Sequential(
+        #     nn.Linear(hp.hiddenDim, hp.hiddenDim),
+        #     nn.ReLU(),
+        #     nn.Linear(hp.hiddenDim, hp.latentDim))
 
 
     def reset_hidden_states(self, for_batch=None):
@@ -46,29 +53,22 @@ class Model(nn.Module):
 
 
     def init_hidden(self, batch_size):
-        layers =1
-        return T.randn(layers, batch_size, self.hiddenDim)
+        layers = self.num_lstm_layers
+        return T.nn.init.orthogonal_(T.zeros(layers, batch_size, self.hiddenDim))
+
 
     def forward(self, snapshot_Seq):
         """
         Args:
             snapshot_Seq (Tensor): (currentBatchSize, seqLen, hiddenDim)
+        Vars:
+            output (Tensor): (currentBatchSize, seqLen, hiddenDim)
+            h_n (Tensor): (num_layers, hiddenDim)
+            c_n (Tensor): (num_layers, hiddenDim)
         Returns:
-            nextLatentVec (Tensor): (currentBatchSize, seqLen, hiddenDim)
+            Outputs (tuple): (output, (h_n, c_n))
         """
-        self.reset_hidden_states(for_batch=snapshot_Seq)
+        self.reset_hidden_states(for_batch=snapshot_Seq) if self.resetHidden else None
 
-        # rl_out (currentBatchSize, seqLen, hiddenDim)
-        # self.rl_h ((1, hiddenDim), (1, hiddenDim))
-        # pdb.set_trace()
-        rl_out, self.rl_h = self.rl(snapshot_Seq, (self.rl_h, self.rl_c))
-        
-        
-        # rl_out, self.rl_h = self.rl(snapshot_Seq)
-        
-        # nextLatentVec = rl_out[:, -1]
-        nextLatentVec = self.rl_h[0][0]
-        nextLatentVec = self.l1(nextLatentVec)
-
-        return nextLatentVec
+        return self.rl(snapshot_Seq, (self.rl_h, self.rl_c))
 

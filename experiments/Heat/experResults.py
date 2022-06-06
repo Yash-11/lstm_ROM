@@ -22,33 +22,44 @@ sys.path.append(projectDir)
 
 from src.Utils import Arguments, loadRunArgs, Dict2Class
 from src.Paths import Paths
-from src.ConvectionDiffusion.ConvectionDiffusionPlots import Plots
-from src.ConvectionDiffusion.ConvectionDiffusionLoadData import LoadData
+from src.Heat.HeatPlots import Plots
+from src.Heat.HeatLoadData import LoadData
 
 
 args = Arguments()
-pathDict = {'run': 'firstTry', 'data': f'../../src/ConvectionDiffusion/solver/pseudoSpectral_ConvectionDiffusion'}
+pathDict = {'run': 'firstTry', 'data': f'../../src/Heat/data'}
 experPaths = Paths(experDir, args.os, pathDict)
 hp = loadRunArgs(experPaths.run)
 
-rawData = LoadData(args, experPaths)
-SensorsLs = hp.numSensorTestLs
-SNRdbLs = hp.noiseLs
-
+rawData = LoadData(hp, experPaths, args)
 
 #%% ------------ load saved predictions during testing ---------------------
 
 try:
-    predData = {}
-    for j, Sensors in enumerate(SensorsLs):
-        for i, SNRdb in enumerate(SNRdbLs):
-            name = f'predDataTest_epoch{hp.loadWeightsEpoch}_Sensors{Sensors}_SNRdb{SNRdb}.hdf5'
-            predData[f'Sensors{Sensors}_SNRdb{SNRdb}'] = h5py.File(join(experPaths.run, name), 'r')
+    # predData = {}
+    name = f'predHDataTest_epoch4000_.hdf5'
+    predData = h5py.File(join(experPaths.run, name), 'r')
     print(f'loaded pred data')
 except:
     print(f'{join(experPaths.run, name)}')
     raise Exception(FileNotFoundError)
 
+
+#%%
+pred = predData['pred'][0]
+target = predData['target'][0]
+loss = np.mean(np.abs((pred - target)/target), 1)*100
+
+timeStepsUnroll = hp.numSampTrain +hp.seq_len*2+ np.arange(0, hp.timeStepsUnroll, 10)
+
+savePath = join(experPaths.run, f'PercentError')
+plotParams = {'xlabel':'Time Step', 'ylabel': 'Percentage Error', 
+            'xticks':np.arange(0, hp.timeStepsUnroll, 10), 'yticks':np.arange(20),
+            'xticklabels':timeStepsUnroll, 'yticklabels':np.arange(20),
+            'title':'Predicted Error', 'savePath':savePath}
+plotData = loss
+
+Plots().plotPercentError(plotData, Dict2Class(plotParams))
 
 #%% -------------------- plot Pred with no noise ---------------------------
 

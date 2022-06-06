@@ -26,10 +26,12 @@ class LoadData:
         self.data (Tensor): (timeStep, 2, numNodes)
     """
 
-    def __init__(self, args, experPaths):
+    def __init__(self, hp, experPaths, args):
 
+        self.hp = hp
         self.info = args.logger.info if hasattr(args, 'logger') else print
         self.dataDir = experPaths.data
+        self.experPaths = experPaths
         
         self.loadVertexValues()        
         self.info(f'data loaded \ndata shape: {self.data.shape}\n')
@@ -49,10 +51,16 @@ class LoadData:
                 timeStep: num steps
         """
 
-        data = loadmat(join(self.dataDir, 'heatS100.mat'))
+        data = loadmat(join(self.dataDir, 'heatS500.mat'))
         self.data = T.tensor(data['solution'], dtype=T.float32)        
-        self.latentDim = self.imDim = self.data.shape[0]
-        self.timeSteps = self.data.shape[1]
+        self.hp.imDim = self.data.shape[0]
+        self.hp.maxNumTimeSteps = self.data.shape[1]
+
+    def loadLatentVecs(self):
+        path = join(self.experPaths.run, 'LatentVecs.npy')
+        self.LatentVecs = T.tensor(np.load(path), dtype=T.float32) 
+
+        self.info(f'Latent Vectors loaded \nshape: {self.LatentVecs.shape}\n')
 
 
 if __name__ == '__main__':

@@ -17,33 +17,66 @@ sys.path.append(projectDir)
 
 from src.Utils import Parser, startSavingLogs, save_args
 from src.Pipeline import ModelPipeline
+from src.AEPipeline import AEPipeline
 from src.Paths import Paths
 
 from src.Heat.HeatDataset import DatasetClass
-from src.Heat.HeatEnsersModel import Model
+from src.Heat.HeatAEDataset import AEDatasetClass
+from src.Heat.HeatLSTMModel import Model
+from src.Heat.HeatAEModel import AutoEncoder
 from src.Heat.HeatLoadData import LoadData
 
 
 
+# def setHyperParams(hp):
+#     # model 
+#     hp.hiddenDim = 128
+#     hp.latentDim = 81
+#     hp.seq_len = 7
+
+#     # training
+#     hp.numIters = 5001
+#     hp.lr = 0.0005
+#     hp.batchSizeTrain = 45
+#     hp.epochStartTrain = 0
+
+#     # testing
+#     hp.loadWeightsEpoch = 5000
+#     hp.batchSizeTest = 1
+#     hp.timeStepsUnroll = 25
+
+#     # data
+#     hp.numSampTrain = 45
+#     hp.numSampTest = 1
+
+#     # logging
+#     hp.save = 1
+#     hp.show = 0
+#     hp.saveLogs = 1
+#     hp.saveInterval = 20
+#     hp.logInterval = 100
+#     hp.checkpointInterval = 5000
+
 def setHyperParams(hp):
     # model 
-    hp.hiddenDim = 128
-    hp.latentDim = 81
-    hp.seq_len = 7
+    hp.hiddenDim = 8
+    hp.latentDim = 8
+    hp.seq_len = 5
 
     # training
-    hp.numIters = 20001
-    hp.lr = 0.0005
-    hp.batchSizeTrain = 45
+    hp.numIters = 4001
+    hp.lr = 0.00034
+    hp.batchSizeTrain = 5
     hp.epochStartTrain = 0
 
     # testing
-    hp.loadWeightsEpoch = 15000
+    hp.loadWeightsEpoch = 4000
     hp.batchSizeTest = 1
+    hp.timeStepsUnroll = 100
 
     # data
-    hp.numSampTrain = 45
-    hp.numSampTest = 20
+    hp.numSampTrain = 40
+    hp.numSampTest = 1
 
     # logging
     hp.save = 1
@@ -51,7 +84,27 @@ def setHyperParams(hp):
     hp.saveLogs = 1
     hp.saveInterval = 20
     hp.logInterval = 100
-    hp.checkpointInterval = 5000
+    hp.checkpointInterval = 500
+
+    # AEtraining
+    hp.numItersAE = 1001
+    hp.lrAE = 0.0003
+    hp.batchSizeTrainAE = 50
+    hp.epochStartTrainAE = 0
+
+    # AEtesting
+    hp.loadAEWeightsEpoch = 1000
+    hp.batchSizeTestAE = 1
+    hp.batchSizeEncode = 500
+
+    # AEdata
+    hp.numSampTrainAE = 500
+    hp.numSampTestAE = 1
+
+    # logging
+    hp.logIntervalAE = 50
+    hp.checkpointIntervalAE = 500
+
 
 def addPaths(ep, runName):
     ep.weights = f'{runName}/checkpoints'
@@ -81,16 +134,22 @@ if __name__ == '__main__':
     # hp = loadRunArgs(experPaths.run)
     
     startSavingLogs(args, experPaths.run, logger)
-    rawData = LoadData(args, experPaths)
+    rawData = LoadData(hp, experPaths, args)
 
-    # lossfn = Loss(rawData, hp, experPaths, device=args.device, info=args.logger.info)
+    aePipeline = AEPipeline(AutoEncoder, hp, experPaths, rawData, AEDatasetClass, args)
+    # aePipeline.train()
+    # aePipeline.test()
+    # aePipeline.generateLatentVecs()
+
+    rawData.loadLatentVecs()
     modelPipeline = ModelPipeline(Model, hp, experPaths, rawData, DatasetClass, args)
 
     # train and test
-    # modelPipeline.train()
+    modelPipeline.train()
 
     hp.predData_Info = f'_'
-    modelPipeline.test()
+    # modelPipeline.test()
+    # aePipeline.decodeLatentVecs()
 
     # save hyper params for the run
     sv_args = hp

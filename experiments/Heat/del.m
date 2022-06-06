@@ -9,8 +9,8 @@ load('Gcoor.mat')
 load('matConnec.mat')
 
 
-pred = h5read('predHDataTest_epoch4000_.hdf5','/pred');
-target = h5read('predHDataTest_epoch4000_.hdf5','/target');
+pred = h5read('ans_100auto_2000ep_lr00035.hdf5','/pred');
+target = h5read('ans_100auto_2000ep_lr00035.hdf5','/target');
 
 % Pred = U*pred;
 % Target = U*target;
@@ -19,8 +19,8 @@ target = h5read('predHDataTest_epoch4000_.hdf5','/target');
 faces = matConnec(1:64, :);
 
 %%
-Resultat(Gcoor, pred(:, 1), faces);
-Resultat(Gcoor, target(:, 1), faces);
+Resultat(Gcoor, pred(:, 50), faces);
+Resultat(Gcoor, target(:, 50), faces);
 
 function []= Resultat(xy,T,cn)
 
