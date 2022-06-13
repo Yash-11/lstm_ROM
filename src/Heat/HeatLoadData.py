@@ -15,7 +15,7 @@ filePath = realpath(__file__)
 projectDir = dirname(dirname(dirname(filePath)))
 sys.path.append(projectDir)
 
-from src.Utils import Dict2Class, awgn
+from src.Utils import Dict2Class
 
 
 class LoadData:
@@ -61,18 +61,4 @@ class LoadData:
         self.LatentVecs = T.tensor(np.load(path), dtype=T.float32) 
 
         self.info(f'Latent Vectors loaded \nshape: {self.LatentVecs.shape}\n')
-
-
-if __name__ == '__main__':
-    
-    from src.Utils import Parser
-    from src.Paths import Paths
-
-    # ---------------------------- Argument Parser -----------------------------
-    args = Parser().parse()
-    pathDict = {'data': 'data'}
-    experDir = dirname(realpath(__file__))
-    experPaths = Paths(experDir, args.os, pathDict=pathDict)
-
-    # -------------------------- load and plot data ----------------------------
-    rawData = LoadData(args, experPaths)
+        

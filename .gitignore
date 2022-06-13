@@ -123,7 +123,12 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+experiments/Heat/results*/
 experiments/Heat/firstTry
-src/Heat/data
+experiments/Heat/data
+
+experiments/Burgers/results*/
+experiments/Burgers/firstTry
+experiments/Burgers/data
 
 **/dataNoise.npy

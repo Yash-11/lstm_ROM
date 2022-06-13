@@ -113,3 +113,38 @@ def test(self):
 
         self.savePredictions(predData, epoch, False) 
 
+
+############################# Dataset
+
+
+rawData = self.rawData.LatentVecs  # (timeSteps, latentDim)
+rawData, self.max, self.min = self.rescale(rawData, a = -1, b = 1)
+
+
+test_init_seq = 20
+rawDataTrain = rawData[0 : numSampTrain*seq_len+1]
+rawDataTest = rawData[numSampTrain*seq_len+1 : numSampTrain*seq_len+1 + timeStepsUnroll+test_init_seq+1]
+
+self.dataTrainX = T.zeros((numSampTrain, seq_len, latentDim))
+self.dataTrainY = T.zeros((numSampTrain, seq_len, latentDim))
+self.dataTestX = T.zeros((numSampTest, test_init_seq, latentDim))
+self.dataTestY = T.zeros((numSampTest, timeStepsUnroll, latentDim))
+# self.dataTestX = T.zeros((numSampTest, seq_len, latentDim))
+# self.dataTestY = T.zeros((numSampTest, seq_len, latentDim))
+
+for i in range(numSampTrain):
+
+    self.dataTrainX[i] = rawDataTrain[i*seq_len:i*seq_len+seq_len,:]
+    self.dataTrainY[i] = rawDataTrain[i*seq_len+1:i*seq_len+seq_len+1,:]
+
+for i in range(numSampTest):
+
+    # self.dataTestX[i] = T.stack([rawDataTest[i+sl, :] for sl in range(test_init_seq)], dim=0)
+    # self.dataTestY[i] = rawDataTest[i + test_init_seq: i + test_init_seq +timeStepsUnroll,:]
+    # self.dataTestX[i] = rawDataTrain[i*seq_len:i*seq_len+seq_len,:]
+    # self.dataTestY[i] = rawDataTrain[i*seq_len+1:i*seq_len+seq_len+1,:]
+
+    # pdb.set_trace()
+    i = 75
+    self.dataTestX[0] = T.stack([rawDataTrain[i+sl, :] for sl in range(test_init_seq)], dim=0)
+    self.dataTestY[0] = rawData[i + test_init_seq: i + test_init_seq +timeStepsUnroll,:]

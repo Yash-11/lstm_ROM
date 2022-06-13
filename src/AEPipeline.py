@@ -231,6 +231,7 @@ class AEPipeline():
     def decodeLatentVecs(self,):
 
         hp = self.hp
+        dataset = self.dataset(self.rawData, '', self.path, hp, device=self.args.device, info=self.info)
 
 
         # ----------------- Load predicted Latent Vectors ----------------------

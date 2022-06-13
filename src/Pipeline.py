@@ -99,8 +99,9 @@ class ModelPipeline():
             input = data[0]  # (currentBatchSize, seq_len, latentDim)
             target = data[1]  # (currentBatchSize, latentDim)
 
-            pred, _ = self.model(input)  # (currentBatchSize, latentDim)
-            loss = self.loss(_[0][0], target)   
+            pred = self.model(input)  # (currentBatchSize, latentDim)
+            # loss = self.loss(_[0][0], target)
+            loss = self.loss(pred, target)   
                                               
             loss.backward()
             optimizer.step()
@@ -113,7 +114,7 @@ class ModelPipeline():
         hp = self.hp
 
         train_dataset = self.dataset(self.rawData, 'train', self.path, hp, device=self.args.device, info=self.info)
-        train_loader = DataLoader(train_dataset, batch_size=hp.batchSizeTrain, shuffle=False)  
+        train_loader = DataLoader(train_dataset, batch_size=hp.batchSizeTrain, shuffle=True)  
 
         optimizer = T.optim.Adam(self.model.parameters(), lr=hp.lr)
         lr_lambda = lambda epoch: 1 ** epoch
@@ -126,6 +127,8 @@ class ModelPipeline():
 
         for epoch in range(hp.epochStartTrain+1, hp.numIters):         
 
+            # for g in optimizer.param_groups:
+            #     g['lr'] = 0.000005
             epochLr = optimizer.param_groups[0]['lr']  
             if epoch % hp.logInterval == 0: self.info(f'\n \n({epoch:02.0f}), lr: {epochLr:.6f}')
             
@@ -182,8 +185,9 @@ class ModelPipeline():
             last_N_seqs = input
             flag = 0
             for i in range(hp.timeStepsUnroll):
-                _, pred_i = self.model(last_N_seqs)  # (currentBatchSize, latentDim)
-                pred_i = pred_i[0][0]
+                pred_i = self.model(last_N_seqs)  # (currentBatchSize, latentDim)
+                # pred_i = pred_i[0][0]
+                # pred_i = _[:, -1]
                 last_N_seqs = T.cat((last_N_seqs[:, 1:], pred_i[:, None]), dim=1)
 
                 if flag:

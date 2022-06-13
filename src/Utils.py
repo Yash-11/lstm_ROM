@@ -69,7 +69,6 @@ def startSavingLogs(args, logsPath, logger):
 class Arguments:
 
     def __init__(self):
-        # pass
         
         self.prjct_dir = dirname(dirname(__file__))
 
@@ -78,7 +77,6 @@ class Arguments:
         elif sys.platform == "win32": operating_sys = 'Windows'
         else: raise Exception('os not supported')
 
-        self.method = 'rk4'
         self.device = T.device('cuda:' + str(0) if T.cuda.is_available() else 'cpu')
         self.os = operating_sys
         self.seed = 0
@@ -97,7 +95,6 @@ class Parser(argparse.ArgumentParser):
         device = T.device('cuda:' + str(0) if T.cuda.is_available() else 'cpu')
 
         self.add_argument('--prjct_dir', type=str, default=prjct_dir)
-        self.add_argument('--method', type=str, choices=['dopri5', 'adams', 'rk4', 'euler'], default='rk4')
         self.add_argument('--device', type=str, default=device)
         self.add_argument('--os', type=str, default=operating_sys)
         self.add_argument('--seed', type=str, default=0)
@@ -106,32 +103,3 @@ class Parser(argparse.ArgumentParser):
     def parse(self):
         args = self.parse_args()
         return args
-
-def awgn(s,SNRdB,L=1):
-    """
-    AWGN channel
-    Add AWGN noise to input signal. The function adds AWGN noise vector to signal
-    's' to generate a resulting signal vector 'r' of specified SNR in dB. It also
-    returns the noise vector 'n' that is added to the signal 's' and the power 
-    spectral density N0 of noise added
-    Args:
-        s : input/transmitted signal vector
-        SNRdB : desired signal to noise ratio (expressed in dB) for the received signal
-        L : oversampling factor (applicable for waveform simulation) default L = 1.
-    Vars:
-        r : received signal vector (r=s+n)
-    Returns:
-        n
-"""
-    gamma = 10**(SNRdB/10) #SNR to linear scale
-    if s.ndim==1:# if s is single dimensional vector
-        P=L*sum(abs(s)**2)/len(s) #Actual power in the vector
-    else: # multi-dimensional signals like MFSK
-        P=L*sum(sum(abs(s)**2))/len(s) # if s is a matrix [MxN]
-    N0=P/gamma # Find the noise spectral density
-    if isrealobj(s):# check if input is real/complex object type
-        n = sqrt(N0/2)*standard_normal(s.shape) # computed noise
-    else:
-        n = sqrt(N0/2)*(standard_normal(s.shape)+1j*standard_normal(s.shape))
-    # r = s + n # received signal
-    return n
