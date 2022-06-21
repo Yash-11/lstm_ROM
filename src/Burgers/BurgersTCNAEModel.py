@@ -23,27 +23,11 @@ class AutoEncoder(nn.Module):
         inDim = outDim = hp.imDim
         self.latentDim = hp.latentDim
         
-        self.encoder = nn.Sequential(
-            nn.Linear(inDim, 64),
-            nn.ReLU(),
-            nn.Linear(64, 32), 
-            nn.ReLU(),
-            nn.Linear(32, hp.latentDim)) 
-        self.decoder = nn.Sequential(
-            nn.Linear(hp.latentDim, 32),
-            nn.ReLU(),
-            nn.Linear(32, 64),
-            nn.ReLU(),
-            nn.Linear(64, outDim)) 
-
         # self.encoder = nn.Sequential(
         #     nn.Linear(inDim, 64),
-        #     nn.BatchNorm1d(num_features=64),
         #     nn.ReLU(),
         #     nn.Linear(64, 32), 
-        #     nn.BatchNorm1d(num_features=32),
         #     nn.ReLU(),
-        #     nn.Dropout(p=0.1),
         #     nn.Linear(32, hp.latentDim)) 
         # self.decoder = nn.Sequential(
         #     nn.Linear(hp.latentDim, 32),
@@ -51,6 +35,22 @@ class AutoEncoder(nn.Module):
         #     nn.Linear(32, 64),
         #     nn.ReLU(),
         #     nn.Linear(64, outDim)) 
+
+        self.encoder = nn.Sequential(
+            nn.Linear(inDim, 64),
+            nn.BatchNorm1d(num_features=64),
+            nn.ReLU(),
+            nn.Linear(64, 32), 
+            nn.BatchNorm1d(num_features=32),
+            nn.ReLU(),
+            nn.Dropout(p=0.1),
+            nn.Linear(32, hp.latentDim)) 
+        self.decoder = nn.Sequential(
+            nn.Linear(hp.latentDim, 32),
+            nn.ReLU(),
+            nn.Linear(32, 64),
+            nn.ReLU(),
+            nn.Linear(64, outDim)) 
 
     def forward(self, x):
         """

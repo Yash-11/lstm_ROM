@@ -131,4 +131,7 @@ experiments/Burgers/results*/
 experiments/Burgers/firstTry
 experiments/Burgers/data
 
+experiments/BurgersTCN/results*/
+experiments/BurgersTCN/data
+
 **/dataNoise.npy

@@ -25,6 +25,7 @@ from src.Burgers.BurgersAEDataset import AEDatasetClass
 from src.Burgers.BurgersLSTMModel import Model
 from src.Burgers.BurgersAEModel import AutoEncoder
 from src.Burgers.BurgersLoadData import LoadData
+from src.Burgers.BurgersPlots import Plots
 
 
 #%%
@@ -32,11 +33,11 @@ def setHyperParams(hp):
     # model 
     hp.hiddenDim = 6
     hp.latentDim = 6
-    hp.seq_len = 5
+    hp.seq_len = 8
 
     # training
     hp.numIters = 5001
-    hp.lr = 0.0001
+    hp.lr = 0.0006
     hp.batchSizeTrain = 25
     hp.epochStartTrain = 000
 
@@ -46,9 +47,9 @@ def setHyperParams(hp):
     hp.timeStepsUnroll = 200
 
     # data
-    hp.numSampTrain = 100
+    hp.numSampTrain = 50
     hp.numSampTest = 1
-    hp.Re = 300
+    hp.Re = 150
 
     # logging
     hp.save = 1
@@ -60,7 +61,7 @@ def setHyperParams(hp):
 
     # AEtraining
     hp.numItersAE = 3001
-    hp.lrAE = 0.00002
+    hp.lrAE = 0.00004
     hp.batchSizeTrainAE = 50
     hp.epochStartTrainAE = 0
 
@@ -91,7 +92,7 @@ logger = logging.getLogger('my_module')
 logger.setLevel(logging.DEBUG)
 
 # set useful paths to instance `experPaths`
-runName ='firstTry'
+runName ='resultsRe300'
 experPaths = Paths(experDir, args.os)
 addPaths(experPaths, runName)
 
@@ -105,6 +106,11 @@ setHyperParams(hp)
 
 startSavingLogs(args, experPaths.run, logger)
 rawData = LoadData(hp, experPaths, args)
+
+
+#%%
+
+Plots().Simulation(rawData.data, 0, join(experPaths.run, 'sim'))
 
 
 #%%

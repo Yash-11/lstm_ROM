@@ -34,6 +34,8 @@ class Model(nn.Module):
         # self.l1 = nn.Sequential(
         #     nn.Linear(hp.hiddenDim, hp.latentDim))
 
+        self.loss = T.nn.MSELoss()
+
 
     def reset_hidden_states(self, for_batch=None):
         if for_batch is not None:
@@ -76,3 +78,6 @@ class Model(nn.Module):
 
         return hc[0][-1]
 
+
+    def loss_fn(self, pred, target):
+        return self.loss(pred, target)

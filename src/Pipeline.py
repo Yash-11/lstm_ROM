@@ -32,7 +32,6 @@ class ModelPipeline():
         self.path = experPaths
 
         self.model = Model(hyperParams, args).to(args.device)
-        self.loss = T.nn.MSELoss()
 
         self.info(self)
         self.info(self.model)
@@ -100,8 +99,7 @@ class ModelPipeline():
             target = data[1]  # (currentBatchSize, latentDim)
 
             pred = self.model(input)  # (currentBatchSize, latentDim)
-            # loss = self.loss(_[0][0], target)
-            loss = self.loss(pred, target)   
+            loss = self.model.loss_fn(pred, target)
                                               
             loss.backward()
             optimizer.step()
@@ -116,7 +114,7 @@ class ModelPipeline():
         train_dataset = self.dataset(self.rawData, 'train', self.path, hp, device=self.args.device, info=self.info)
         train_loader = DataLoader(train_dataset, batch_size=hp.batchSizeTrain, shuffle=True)  
 
-        optimizer = T.optim.Adam(self.model.parameters(), lr=hp.lr)
+        optimizer = T.optim.Adam(self.model.parameters(), lr=hp.lr,  weight_decay=1e-5)
         lr_lambda = lambda epoch: 1 ** epoch
         scheduler = LambdaLR(optimizer, lr_lambda=lr_lambda)
         losses = []

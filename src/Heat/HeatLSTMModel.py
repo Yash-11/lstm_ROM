@@ -36,6 +36,8 @@ class Model(nn.Module):
         #     nn.ReLU(),
         #     nn.Linear(hp.hiddenDim, hp.latentDim))
 
+        self.loss = T.nn.MSELoss()
+
 
     def reset_hidden_states(self, for_batch=None):
         if for_batch is not None:
@@ -72,3 +74,6 @@ class Model(nn.Module):
 
         return self.rl(snapshot_Seq, (self.rl_h, self.rl_c))
 
+
+    def loss_fn(self, pred, target):
+        return self.loss(pred, target)

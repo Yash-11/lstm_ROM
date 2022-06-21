@@ -30,25 +30,25 @@ from src.Burgers.BurgersLoadData import LoadData
 #%%
 def setHyperParams(hp):
     # model 
-    hp.hiddenDim = 6
-    hp.latentDim = 6
-    hp.seq_len = 5
+    hp.hiddenDim = 3
+    hp.latentDim = 3
+    hp.seq_len = 4
 
     # training
-    hp.numIters = 5001
-    hp.lr = 0.0001
+    hp.numIters = 30001
+    hp.lr = 0.00005
     hp.batchSizeTrain = 25
     hp.epochStartTrain = 000
 
     # testing
-    hp.loadWeightsEpoch = 5000
+    hp.loadWeightsEpoch = 30000
     hp.batchSizeTest = 1
     hp.timeStepsUnroll = 200
 
     # data
     hp.numSampTrain = 100
     hp.numSampTest = 1
-    hp.Re = 50
+    hp.Re = 150
 
     # logging
     hp.save = 1
@@ -60,7 +60,7 @@ def setHyperParams(hp):
 
     # AEtraining
     hp.numItersAE = 3001
-    hp.lrAE = 0.00002
+    hp.lrAE = 0.00004
     hp.batchSizeTrainAE = 50
     hp.epochStartTrainAE = 0
 
@@ -91,7 +91,7 @@ logger = logging.getLogger('my_module')
 logger.setLevel(logging.DEBUG)
 
 # set useful paths to instance `experPaths`
-runName ='firstTry'
+runName ='resultsRe150'
 experPaths = Paths(experDir, args.os)
 addPaths(experPaths, runName)
 
@@ -109,15 +109,15 @@ rawData = LoadData(hp, experPaths, args)
 
 #%%
 aePipeline = AEPipeline(AutoEncoder, hp, experPaths, rawData, AEDatasetClass, args)
-# aePipeline.train()
+aePipeline.train()
 # aePipeline.test()
-# aePipeline.generateLatentVecs()
+aePipeline.generateLatentVecs()
 
 rawData.loadLatentVecs()
 modelPipeline = ModelPipeline(Model, hp, experPaths, rawData, DatasetClass, args)
 
 # train and test
-# modelPipeline.train()
+modelPipeline.train()
 
 hp.predData_Info = f'_'
 modelPipeline.test()

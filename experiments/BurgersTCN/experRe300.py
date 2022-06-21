@@ -20,35 +20,41 @@ from src.Pipeline import ModelPipeline
 from src.AEPipeline import AEPipeline
 from src.Paths import Paths
 
-from src.Burgers.BurgersDataset import DatasetClass
-from src.Burgers.BurgersAEDataset import AEDatasetClass
-from src.Burgers.BurgersLSTMModel import Model
-from src.Burgers.BurgersAEModel import AutoEncoder
-from src.Burgers.BurgersLoadData import LoadData
+from src.Burgers.BurgersTCNDataset import DatasetClass
+from src.Burgers.BurgersTCNAEDataset import AEDatasetClass
+from src.Burgers.BurgersTCNModel import Model
+from src.Burgers.BurgersTCNAEModel import AutoEncoder
+from src.Burgers.BurgersTCNLoadData import LoadData
+from src.Burgers.BurgersTCNPlots import Plots
 
 
 #%%
 def setHyperParams(hp):
     # model 
-    hp.hiddenDim = 6
     hp.latentDim = 6
-    hp.seq_len = 5
+    hp.seq_len = 13
+    hp.num_inputs = hp.latentDim
+    hp.num_channels = [12, 12]
+    hp.output_size = 6
+    hp.kernel_size = 3
+    hp.dropout = 0.1
 
     # training
     hp.numIters = 5001
-    hp.lr = 0.0001
+    hp.lr = 0.0005
     hp.batchSizeTrain = 25
-    hp.epochStartTrain = 000
+    
+    hp.epochStartTrain = 0000
 
     # testing
-    hp.loadWeightsEpoch = 5000
+    hp.loadWeightsEpoch = 4000
     hp.batchSizeTest = 1
-    hp.timeStepsUnroll = 200
+    hp.timeStepsUnroll = 230
 
     # data
-    hp.numSampTrain = 100
+    hp.numSampTrain = 150
     hp.numSampTest = 1
-    hp.Re = 50
+    hp.Re = 300
 
     # logging
     hp.save = 1
@@ -60,7 +66,7 @@ def setHyperParams(hp):
 
     # AEtraining
     hp.numItersAE = 3001
-    hp.lrAE = 0.00002
+    hp.lrAE = 0.00004
     hp.batchSizeTrainAE = 50
     hp.epochStartTrainAE = 0
 
@@ -75,13 +81,13 @@ def setHyperParams(hp):
 
     # logging
     hp.logIntervalAE = 50
-    hp.checkpointIntervalAE = 500
+    hp.checkpointIntervalAE = 1000
 
 
 def addPaths(ep, runName):
     ep.weights = f'{runName}/checkpoints'
     ep.data = f'./data'
-    ep.code = f'../../src/Burgers'
+    ep.code = f'../../src/BurgersTCN'
     ep.run = f'{runName}'
 
 
@@ -90,21 +96,26 @@ args = Arguments()#.parse()
 logger = logging.getLogger('my_module')
 logger.setLevel(logging.DEBUG)
 
-# set useful paths to instance `experPaths`
-runName ='firstTry'
-experPaths = Paths(experDir, args.os)
-addPaths(experPaths, runName)
-
 # set hyper params for run
 class HyperParams: pass
 hp = HyperParams()
 setHyperParams(hp)
+
+# set useful paths to instance `experPaths`
+runName = f'resultsRe{hp.Re}'
+experPaths = Paths(experDir, args.os)
+addPaths(experPaths, runName)
 
 # load saved hyper params for testing from old runs
 # hp = loadRunArgs(experPaths.run)
 
 startSavingLogs(args, experPaths.run, logger)
 rawData = LoadData(hp, experPaths, args)
+
+
+#%%
+
+Plots().Simulation(rawData.data, 0, join(experPaths.run, 'sim'))
 
 
 #%%
