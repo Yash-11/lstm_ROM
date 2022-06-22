@@ -30,6 +30,62 @@ from src.Burgers.BurgersTCNPlots import Plots
 
 #%%
 def setHyperParams(hp):
+
+# data 250 tuning
+    # model 
+    hp.latentDim = 10
+    hp.seq_len = 20
+    hp.num_inputs = hp.latentDim
+    hp.num_channels = [16, 32, 16]
+    hp.output_size = hp.latentDim
+    hp.kernel_size = 3
+    hp.dropout = 0.1
+
+    # training
+    hp.numIters = 7001
+    hp.lr = 0.0002
+    hp.batchSizeTrain = 15
+    
+    hp.epochStartTrain = 00
+
+    # testing
+    hp.loadWeightsEpoch = 2400
+    hp.batchSizeTest = 1
+    hp.timeStepsUnroll = 230
+
+    # data
+    hp.numSampTrain = 150
+    hp.numSampTest = 1
+    hp.Re = 600
+
+    # logging
+    hp.save = 1
+    hp.show = 0
+    hp.saveLogs = 1
+    hp.saveInterval = 20
+    hp.logInterval = 100
+    hp.checkpointInterval = 400
+
+    # AEtraining
+    hp.numItersAE = 3001
+    hp.lrAE = 0.0003
+    hp.batchSizeTrainAE = 50
+    hp.epochStartTrainAE = 0
+
+    # AEtesting
+    hp.loadAEWeightsEpoch = 3000
+    hp.batchSizeTestAE = 1
+    hp.batchSizeEncode = 500
+
+    # AEdata
+    hp.numSampTrainAE = 250
+    hp.numSampTestAE = 5
+
+    # logging
+    hp.logIntervalAE = 50
+    hp.checkpointIntervalAE = 1000
+
+# # data 250
 #     # model 
 #     hp.latentDim = 10
 #     hp.seq_len = 20
@@ -41,15 +97,15 @@ def setHyperParams(hp):
 
 #     # training
 #     hp.numIters = 5001
-#     hp.lr = 0.0003
+#     hp.lr = 0.0001#0.0003
 #     hp.batchSizeTrain = 25
     
 #     hp.epochStartTrain = 0000
 
 #     # testing
-#     hp.loadWeightsEpoch = 3000
+#     hp.loadWeightsEpoch = 5000
 #     hp.batchSizeTest = 1
-#     hp.timeStepsUnroll = 220
+#     hp.timeStepsUnroll = 230
 
 #     # data
 #     hp.numSampTrain = 150
@@ -84,58 +140,61 @@ def setHyperParams(hp):
 #     hp.checkpointIntervalAE = 1000
 
 
-    # model 
-    hp.latentDim = 10
-    hp.seq_len = 20
-    hp.num_inputs = hp.latentDim
-    hp.num_channels = [36, 36, 36]
-    hp.output_size = hp.latentDim
-    hp.kernel_size = 3
-    hp.dropout = 0.1
+# data 500
+    # # model 
+    # hp.latentDim = 10
+    # hp.seq_len = 20
+    # hp.num_inputs = hp.latentDim
+    # hp.num_channels = [36, 36, 36]
+    # hp.output_size = hp.latentDim
+    # hp.kernel_size = 3
+    # hp.dropout = 0.1
 
-    # training
-    hp.numIters = 5001
-    hp.lr = 0.0003
-    hp.batchSizeTrain = 25
+    # # training
+    # hp.numIters = 5001
+    # hp.lr = 0.0002
+    # hp.batchSizeTrain = 50
     
-    hp.epochStartTrain = 0000
+    # hp.epochStartTrain = 0000
 
-    # testing
-    hp.loadWeightsEpoch = 4000
-    hp.batchSizeTest = 1
-    hp.timeStepsUnroll = 470
+    # # testing
+    # hp.loadWeightsEpoch = 2500
+    # hp.batchSizeTest = 1
+    # hp.timeStepsUnroll = 470
+    # # hp.timeStepsUnroll = 230
 
-    # data
-    hp.numSampTrain = 200
-    hp.numSampTest = 1
-    hp.Re = 600
+    # # data
+    # hp.numSampTrain = 300
+    # # hp.numSampTrain = 150
+    # hp.numSampTest = 1
+    # hp.Re = 600
 
-    # logging
-    hp.save = 1
-    hp.show = 0
-    hp.saveLogs = 1
-    hp.saveInterval = 20
-    hp.logInterval = 100
-    hp.checkpointInterval = 500
+    # # logging
+    # hp.save = 1
+    # hp.show = 0
+    # hp.saveLogs = 1
+    # hp.saveInterval = 20
+    # hp.logInterval = 100
+    # hp.checkpointInterval = 500
 
-    # AEtraining
-    hp.numItersAE = 4001
-    hp.lrAE = 0.00004
-    hp.batchSizeTrainAE = 100
-    hp.epochStartTrainAE = 0
+    # # AEtraining
+    # hp.numItersAE = 4001
+    # hp.lrAE = 0.00004
+    # hp.batchSizeTrainAE = 100
+    # hp.epochStartTrainAE = 0
 
-    # AEtesting
-    hp.loadAEWeightsEpoch = 4000
-    hp.batchSizeTestAE = 1
-    hp.batchSizeEncode = 500
+    # # AEtesting
+    # hp.loadAEWeightsEpoch = 4000
+    # hp.batchSizeTestAE = 1
+    # hp.batchSizeEncode = 500
 
-    # AEdata
-    hp.numSampTrainAE = 500
-    hp.numSampTestAE = 1
+    # # AEdata
+    # hp.numSampTrainAE = 500
+    # hp.numSampTestAE = 1
 
-    # logging
-    hp.logIntervalAE = 50
-    hp.checkpointIntervalAE = 1000
+    # # logging
+    # hp.logIntervalAE = 50
+    # hp.checkpointIntervalAE = 1000
 
 
 def addPaths(ep, runName):
@@ -169,20 +228,20 @@ rawData = LoadData(hp, experPaths, args)
 
 #%%
 
-Plots().Simulation(rawData.data, 0, join(experPaths.run, 'sim'))
+# Plots().Simulation(rawData.data, 0, join(experPaths.run, 'sim'))
 
 
 #%%
 aePipeline = AEPipeline(AutoEncoder, hp, experPaths, rawData, AEDatasetClass, args)
-aePipeline.train()
+# aePipeline.train()
 # aePipeline.test()
-aePipeline.generateLatentVecs()
+# aePipeline.generateLatentVecs()
 
 rawData.loadLatentVecs()
 modelPipeline = ModelPipeline(Model, hp, experPaths, rawData, DatasetClass, args)
 
-# train and test
-modelPipeline.train()
+# train and test 
+# modelPipeline.train()
 
 hp.predData_Info = f'_'
 modelPipeline.test()

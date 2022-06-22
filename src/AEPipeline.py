@@ -144,7 +144,7 @@ class AEPipeline():
     
     def savePredictions(self, predData, epoch, trainBool):
         info = self.hp.predData_Info if hasattr(self.hp, 'predData_Info') else ''
-        predData_Path = join(self.path.run, f'predDataTest_epoch{epoch}{info}.hdf5')
+        predData_Path = join(self.path.run, f'predLatentDataTest_epoch{epoch}{info}.hdf5')
 
         predArray, targetArray = predData
 
@@ -175,7 +175,7 @@ class AEPipeline():
             pred, _ = self.model(input)  # (currentBatchSize, latentDim)
 
             
-            loss = T.mean(T.abs(pred - target)/target, 2)
+            loss = T.mean(T.abs(pred - target)/target, 1)
             self.info(f'({batchIdx}) Testing loss: {loss*100}')
 
             predLs.append(pred)

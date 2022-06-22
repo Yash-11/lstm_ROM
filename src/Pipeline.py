@@ -126,7 +126,7 @@ class ModelPipeline():
         for epoch in range(hp.epochStartTrain+1, hp.numIters):         
 
             # for g in optimizer.param_groups:
-            #     g['lr'] = 0.000005
+            #     g['lr'] = 0.0001
             epochLr = optimizer.param_groups[0]['lr']  
             if epoch % hp.logInterval == 0: self.info(f'\n \n({epoch:02.0f}), lr: {epochLr:.6f}')
             

@@ -31,7 +31,7 @@ from src.Burgers.BurgersPlots import Plots
 #%%
 def setHyperParams(hp):
 
-# data 25 new
+# data 250 new
     # model 
     hp.hiddenDim = 10
     hp.latentDim = 10
@@ -51,7 +51,7 @@ def setHyperParams(hp):
     # data
     hp.numSampTrain = 150
     hp.numSampTest = 1
-    hp.Re = 300
+    hp.Re = 600
 
     # logging
     hp.save = 1

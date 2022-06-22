@@ -75,3 +75,30 @@ savePath = join(experPaths.run, f'BurgerspredimPlot{0}_epoch{hp.loadWeightsEpoch
 Plots().implotPred(plotData, Dict2Class(plotParams), savePath)
 
 # %%
+
+
+#%% ------------ load saved AE predictions during testing ---------------------
+
+try:
+    # predData = {}
+    name = f'predLatentDataTest_epoch{hp.loadAEWeightsEpoch}.hdf5'
+    predData = h5py.File(join(experPaths.run, name), 'r')
+    print(f'loaded pred data {name}')
+except:
+    print(f'{join(experPaths.run, name)}')
+    raise Exception(FileNotFoundError)
+
+#%%
+
+pred = predData['pred']
+target = predData['target']
+
+# pdb.set_trace()
+# loss = np.mean(np.abs((pred - target)), 1)
+
+savePath = join(experPaths.run, f'BurgersAEpredPlot{0}_epoch{hp.loadWeightsEpoch}')
+plotParams = {'tStepModelPlot':[2]*hp.numSampTest}
+plotData = {'pred': pred, 'target': target}
+Plots().plotPred(plotData, Dict2Class(plotParams), savePath) 
+
+

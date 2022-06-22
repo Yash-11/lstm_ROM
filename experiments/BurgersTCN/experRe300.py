@@ -30,24 +30,26 @@ from src.Burgers.BurgersTCNPlots import Plots
 
 #%%
 def setHyperParams(hp):
+    
+# data 250 new
     # model 
-    hp.latentDim = 6
-    hp.seq_len = 13
+    hp.latentDim = 10
+    hp.seq_len = 20
     hp.num_inputs = hp.latentDim
-    hp.num_channels = [12, 12]
-    hp.output_size = 6
+    hp.num_channels = [36, 36, 36]
+    hp.output_size = hp.latentDim
     hp.kernel_size = 3
     hp.dropout = 0.1
 
     # training
     hp.numIters = 5001
-    hp.lr = 0.0005
+    hp.lr = 0.0003
     hp.batchSizeTrain = 25
     
     hp.epochStartTrain = 0000
 
     # testing
-    hp.loadWeightsEpoch = 4000
+    hp.loadWeightsEpoch = 2500
     hp.batchSizeTest = 1
     hp.timeStepsUnroll = 230
 
@@ -82,6 +84,60 @@ def setHyperParams(hp):
     # logging
     hp.logIntervalAE = 50
     hp.checkpointIntervalAE = 1000
+
+# data 250 old
+    # # model 
+    # hp.latentDim = 6
+    # hp.seq_len = 13
+    # hp.num_inputs = hp.latentDim
+    # hp.num_channels = [12, 12]
+    # hp.output_size = 6
+    # hp.kernel_size = 3
+    # hp.dropout = 0.1
+
+    # # training
+    # hp.numIters = 5001
+    # hp.lr = 0.0005
+    # hp.batchSizeTrain = 25
+    
+    # hp.epochStartTrain = 0000
+
+    # # testing
+    # hp.loadWeightsEpoch = 4000
+    # hp.batchSizeTest = 1
+    # hp.timeStepsUnroll = 230
+
+    # # data
+    # hp.numSampTrain = 150
+    # hp.numSampTest = 1
+    # hp.Re = 300
+
+    # # logging
+    # hp.save = 1
+    # hp.show = 0
+    # hp.saveLogs = 1
+    # hp.saveInterval = 20
+    # hp.logInterval = 100
+    # hp.checkpointInterval = 500
+
+    # # AEtraining
+    # hp.numItersAE = 3001
+    # hp.lrAE = 0.00004
+    # hp.batchSizeTrainAE = 50
+    # hp.epochStartTrainAE = 0
+
+    # # AEtesting
+    # hp.loadAEWeightsEpoch = 3000
+    # hp.batchSizeTestAE = 1
+    # hp.batchSizeEncode = 500
+
+    # # AEdata
+    # hp.numSampTrainAE = 250
+    # hp.numSampTestAE = 1
+
+    # # logging
+    # hp.logIntervalAE = 50
+    # hp.checkpointIntervalAE = 1000
 
 
 def addPaths(ep, runName):
@@ -130,7 +186,7 @@ modelPipeline = ModelPipeline(Model, hp, experPaths, rawData, DatasetClass, args
 # train and test
 # modelPipeline.train()
 
-hp.predData_Info = f'_'
+hp.predData_Info = f'_' 
 modelPipeline.test()
 aePipeline.decodeLatentVecs()
 

@@ -27,7 +27,7 @@ from src.Burgers.BurgersLoadData import LoadData
 
 
 args = Arguments()
-pathDict = {'run': 'resultsRe300', 'data': f'./data'}
+pathDict = {'run': 'resultsRe600', 'data': f'./data'}
 experPaths = Paths(experDir, args.os, pathDict)
 hp = loadRunArgs(experPaths.run)
 

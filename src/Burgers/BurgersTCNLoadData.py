@@ -51,7 +51,7 @@ class LoadData:
                 timeStep: num steps
         """
 
-        data = np.load(join(self.dataDir, f'Burgers1d_Nx200_Nt500_Re{self.hp.Re}.00.npz'))
+        data = np.load(join(self.dataDir, f'Burgers1d_Nx200_Nt250_Re{self.hp.Re}.00.npz'))
         self.data = T.tensor(data['burgers'], dtype=T.float32)        
         self.hp.imDim = self.data.shape[0]
         self.hp.maxNumTimeSteps = self.data.shape[1]

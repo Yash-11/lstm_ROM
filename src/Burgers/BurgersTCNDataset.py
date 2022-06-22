@@ -67,7 +67,7 @@ class DatasetClass(Dataset):
             # self.dataTestX[i] = T.stack([rawDataTest[i+sl,:] for sl in range(seq_len)], dim=0)
             # self.dataTestY[i] = T.stack([rawDataTest[i+seq_len+sl,:] for sl in range(timeStepsUnroll)], dim=0)
             
-            self.dataTestX[i] = T.stack([rawDataTrain[i+sl,:] for sl in range(seq_len)], dim=0)
+            self.dataTestX[i] = T.stack([rawData[i+sl,:] for sl in range(seq_len)], dim=0)
             self.dataTestY[i] = T.stack([rawData[i+seq_len+sl,:] for sl in range(timeStepsUnroll)], dim=0)
 
 

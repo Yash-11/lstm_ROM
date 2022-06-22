@@ -38,12 +38,16 @@ class AEDatasetClass(Dataset):
 
         rawData = self.rawData.data.T  # (maxNumTimeSteps, imDim)
         rawData, self.hp.meanAE, self.hp.stdAE = self.normalize(rawData)
+        len = rawData.shape[0]
 
         self.dataTrainX = rawData  # (maxNumTimeSteps, imDim)
         self.dataTrainY = rawData  # (maxNumTimeSteps, imDim)
 
-        self.dataTestX = rawData[10:11]  # (numSampTest, imDim)
-        self.dataTestY = rawData[10:11]  # (numSampTest, imDim)
+        nTest = self.hp.numSampTestAE
+        idx = np.arange(0, len, int((len-1e-1)//nTest))[1:nTest+1]
+        self.dataTestX = rawData[idx]  # (numSampTest, imDim)
+        self.dataTestY = rawData[idx]  # (numSampTest, imDim)
+        # pdb.set_trace()
 
         self.dataEncodeX = rawData  # (maxNumTimeSteps, imDim)
 
@@ -56,7 +60,10 @@ class AEDatasetClass(Dataset):
 
     
     def __len__(self):
-        len = self.hp.maxNumTimeSteps
+        
+        if self.use == 'train': len = self.hp.maxNumTimeSteps
+        elif self.use == 'test': len = self.hp.numSampTestAE
+        elif self.use == 'encode': len = self.hp.maxNumTimeSteps
         return len
 
 

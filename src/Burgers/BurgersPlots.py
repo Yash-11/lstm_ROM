@@ -76,8 +76,8 @@ class Plots:
 
         pp = plotParams
 
-        pred = plotData['pred']
-        target = plotData['target']
+        pred = plotData['pred'][:]
+        target = plotData['target'][:]
         error = np.abs(pred[:] - target[:])
 
         plt.close("all")
@@ -88,7 +88,6 @@ class Plots:
         cmap_error = mpl.cm.get_cmap('inferno') 
         
         fig, ax = plt.subplots(2, 1)
-        # pdb.set_trace()
         ax[0].plot(pred.T)
         ax[1].plot(target.T)
 
