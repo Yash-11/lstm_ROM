@@ -23,7 +23,7 @@ class AEPipeline():
             n_sensor (int): number of sensors
         """
         self.args = args
-        self.info = args.logger.info
+        self.info = args.info
 
         self.hp = hyperParams
         self.rawData = rawData
@@ -31,12 +31,12 @@ class AEPipeline():
         self.path = experPaths
 
         self.model = Model(hyperParams, args).to(args.device)
-        self.loss = T.nn.MSELoss()
+        self.loss = T.nn.MSELoss(reduction = 'sum')
 
         self.info(self)
         self.info(self.model)
 
-    
+
     def saveModel(self, epoch, optimizer, scheduler, losses):
         PATH = join(self.path.weights, f'AEweights_epoch{epoch}.tar')
         state = {'epoch': epoch,
@@ -46,16 +46,20 @@ class AEPipeline():
                  'losses': losses
                  }
         T.save(state, PATH)
-        print(f'model saved at epoch {epoch}')
+        self.info(f'model saved at epoch {epoch}')
 
         plt.figure()
-        plt.plot(losses)
+        plt.plot(losses['train'], label='train')
+        plt.plot(losses['valid'], label='valid')
         plt.xlabel('Epochs')
         plt.ylabel('MSE')
         plt.title('Training Loss')
+        plt.legend()
         plt.yscale("log")
         plt.savefig(join(self.path.run, f'AE_Loss_plot.png'))
         # plt.close()
+        plt.close()
+        plt.close('all')
 
 
     def loadModel(self, epoch, optimizer=None, scheduler=None, losses=None):
@@ -64,7 +68,7 @@ class AEPipeline():
             PATH = join(self.path.weights, f'AEweights_epoch{epoch}.tar')
             checkpoint = T.load(PATH, map_location=T.device(self.args.device))
             checkpoint_epoch = checkpoint['epoch']
-            print(f'Found model at epoch: {checkpoint_epoch}')
+            self.info(f'Found model at epoch: {checkpoint_epoch}')
         except FileNotFoundError:
             if epoch>0: raise FileNotFoundError(f'Error: Could not find PyTorch network at epoch: {epoch}')
             return
@@ -114,10 +118,10 @@ class AEPipeline():
         train_dataset = self.dataset(self.rawData, 'train', self.path, hp, device=self.args.device, info=self.info)
         train_loader = DataLoader(train_dataset, batch_size=hp.batchSizeTrainAE, shuffle=True)
 
-        optimizer = T.optim.Adam(self.model.parameters(), lr=hp.lrAE, weight_decay=1e-5)
+        optimizer = T.optim.Adam(self.model.parameters(), lr=hp.lrAE, weight_decay=hp.weight_decay)
         lr_lambda = lambda epoch: 1 ** epoch
         scheduler = LambdaLR(optimizer, lr_lambda=lr_lambda)
-        losses = []
+        losses = {'train': [], 'valid': []}
 
         # ------------------- load model from checkpoint -----------------------
         if hp.epochStartTrainAE:
@@ -125,21 +129,25 @@ class AEPipeline():
 
         for epoch in range(hp.epochStartTrainAE+1, hp.numItersAE):         
 
-            epochLr = optimizer.param_groups[0]['lr']  
-            if epoch % hp.logIntervalAE == 0: self.info(f'\n \n({epoch:02.0f}), lr: {epochLr:.6f}')
-            
-            loss = self.trainingEpoch(optimizer, train_loader, epoch)
-            losses.append(loss.item())
+            epochLr = optimizer.param_groups[0]['lr']              
+            loss = self.trainingEpoch(optimizer, train_loader, epoch)/train_dataset.dataTrainX.shape[0]
+            losses['train'].append(loss.item())
 
             # -------------------------- adjusted lr ---------------------------
             scheduler.step()
+
+            # -------------------------- validate -------------------------------
+            self.model.eval()
+            pred, _ = self.model(train_dataset.dataValidX.to(self.args.device))
+            valid_loss = self.loss(train_dataset.dataValidY, pred.cpu())/train_dataset.dataValidX.shape[0]
+            losses['valid'].append(valid_loss.item())
 
             # ------------------- Save model periodically ----------------------
             if (epoch % hp.checkpointIntervalAE == 0) and (epoch > 0):
                 self.saveModel(epoch, optimizer, scheduler, losses)
 
             # ------------------------ print progress --------------------------
-            if epoch % hp.logIntervalAE == 0: self.info(f'   ({epoch}) Training loss: {loss:.8f}')
+            if epoch % hp.logIntervalAE == 0: self.info(f'({epoch}) Training loss: {loss:.8f} Validation loss: {valid_loss:.8f}')
 
     
     def savePredictions(self, predData, epoch, trainBool):
@@ -181,14 +189,14 @@ class AEPipeline():
             predLs.append(pred)
             dataLs.append(target)
         
-        predData = T.cat(predLs, dim=0), T.cat(dataLs, dim=0)  # (numSampTest, timeStepModel, M, numNodes)
+        predData = T.cat(predLs, dim=0), T.cat(dataLs, dim=0)  # (numSampTest, latentDim)
 
-        self.savePredictions(predData, epoch, False) 
+        self.savePredictions(predData, epoch, False)
 
 
     def saveLatentVecs(self, LatentVecs):
         path = join(self.path.run, f'LatentVecs.npy')
-        np.save(path, LatentVecs.detach().cpu().numpy())
+        np.save(path, LatentVecs)
 
     
     def generateLatentVecs(self,):
@@ -210,8 +218,9 @@ class AEPipeline():
             _, _LatentVecs = self.model(input)  # (currentBatchSize, latentDim)
             LatentVecs.append(_LatentVecs)
 
-        LatentVecs = T.cat(LatentVecs, 0)
+        LatentVecs = T.cat(LatentVecs, 0).detach().cpu().numpy()  # (numSampTrainAE, latentDim)
         self.saveLatentVecs(LatentVecs)
+        return LatentVecs
 
 
     def saveOutputs(self, pred, target):
@@ -255,4 +264,5 @@ class AEPipeline():
         pred = self.denormalize(pred, self.hp.meanAE, self.hp.stdAE)
         target = self.denormalize(target, self.hp.meanAE, self.hp.stdAE)
 
+        # pdb.set_trace()
         self.saveOutputs(pred, target)

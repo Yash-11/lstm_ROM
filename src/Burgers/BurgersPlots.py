@@ -60,6 +60,8 @@ class Plots:
         #         yticks=pp.yticks, ylabel=pp.ylabel, 
         #         xticklabels=pp.xticklabels, yticklabels=pp.yticklabels,
         #         title=pp.title)
+        plt.ylabel(f"%Error")
+        plt.xlabel("timestep")
 
         self.save_show(1, pp.savePath, fig, bbox_inches='tight', format='png')
 
@@ -96,10 +98,75 @@ class Plots:
 
         self.save_show(1, savePath, fig, bbox_inches='tight', format='png')
 
+    def plotPredSingle(self, plotData: Dict, plotParams, savePath: str, timestep):
+        """
+        Args:
+            plotData (Dict):
+        Vars:
+            pred (ndarray): (numSampTest, timeStepModel, 1, numNodes)
+            target (ndarray): (numSampTest, timeStepModel, 1, numNodes)
+        """
+
+        pp = plotParams
+
+        pred = plotData['pred'][:]
+        target = plotData['target'][:]
+        
+        plt.close("all")
+        mpl.rcParams['font.family'] = ['serif']  # default is sans-serif
+        mpl.rc('text', usetex=False)
+        mpl.rc('font', size=8)        
+        
+        fig, ax = plt.subplots(1, 1)
+        ax.plot(target[0], label = 'training end')
+        ax.plot(target[timestep], label = 'ground truth')
+        ax.plot(pred[timestep], label = 'prediction')
+        ax.legend()
+        ax.set_ylabel('u', fontsize=8)
+        ax.set_xlabel('x', fontsize=8)
+        ax.set_title(f'Prediction at timestep = {timestep}')
+
+        self.save_show(1, savePath, fig, bbox_inches='tight', format='png')
+
+    def plotPredSingleVar(self, plotData: Dict, plotParams, savePath: str, timestep):
+        """
+        Args:
+            plotData (Dict):
+        Vars:
+            pred (ndarray): (numSampTest, timeStepModel, 1, numNodes)
+            target (ndarray): (numSampTest, timeStepModel, 1, numNodes)
+        """
+
+        pp = plotParams
+
+        pred = plotData['pred'][:]
+        target = plotData['target'][:]
+        var = plotData['var'][:]
+        sig = var**0.5
+        x = np.arange(pred.shape[1])
+        
+        plt.close("all")
+        mpl.rcParams['font.family'] = ['serif']  # default is sans-serif
+        mpl.rc('text', usetex=False)
+        mpl.rc('font', size=8)        
+        
+        fig, ax = plt.subplots(1, 1)
+        ax.plot(target[0], label = 'training end')
+        ax.plot(target[timestep], label = 'ground truth')
+        ax.plot(pred[timestep], label = 'prediction')
+        # pdb.set_trace()
+        ax.fill_between(x, pred[timestep]+sig[timestep], pred[timestep]-sig[timestep], facecolor='blue', alpha=0.3)
+        ax.legend()
+        ax.set_ylabel('u', fontsize=8)
+        ax.set_xlabel('x', fontsize=8)
+        ax.set_title(f'Prediction at timestep = {timestep}')
+
+        self.save_show(1, savePath, fig, bbox_inches='tight', format='png')
 
     def implotPred(self, plotData: Dict, plotParams, savePath: str):
         """
         Args:
+
             plotData (Dict):
         Vars:
             pred (ndarray): (numSampTest, timeStepModel, 1, numNodes)
@@ -168,58 +235,31 @@ class Plots:
 
         self.save_show(1, savePath, fig, bbox_inches='tight', format='png') 
 
-
-    def violinplot(self, l2Error, plotParams, savePath):
+    def plotPredSingleAE(self, plotData: Dict, plotParams, savePath: str, timestep):
         """
         Args:
-            plotParams (Dict):
+            plotData (Dict):
         Vars:
-            l2Error (ndarray): (M, numNoiseLevels, numSampTest*numNodes)
+            pred (ndarray): (numSampTest, timeStepModel, 1, numNodes)
+            target (ndarray): (numSampTest, timeStepModel, 1, numNodes)
         """
-        import matplotlib.patches as mpatches
+
         pp = plotParams
 
-        labels = []
-        def add_label(violin, label):
-            color = violin["bodies"][0].get_facecolor().flatten()
-            labels.append((mpatches.Patch(color=color), label))
-
-        fig, ax = plt.subplots()
-
-        for m in range(l2Error.shape[0]):
-            vp = ax.violinplot(l2Error[m], pp.xticksPlot[m], widths=3, showmeans=True)#,showmeans=False, showmedians=False, showextrema=False)
-            
-            add_label(vp, pp.label[m])
-            # styling:
-            for body in vp['bodies']:
-                body.set_facecolor(pp.facecolor[m])
-                body.set_edgecolor('black')
-                body.set_alpha(0.4)
-        ax.set(xlim=(0, 50), xticks=pp.xticks, xlabel=pp.xlabel, xticklabels=pp.xticklabels,
-                ylim=(0, 0.5), yticks=np.arange(0, 0.5, 0.05), ylabel=pp.ylabel, title=pp.title)
+        pred = plotData['pred'][:]
+        target = plotData['target'][:]
         
-        plt.legend(*zip(*labels), loc=2)
-        self.save_show(1, savePath, fig)
-
-
-    def noisePlots(self, plotData, plotParams, savePath):
-        pp = plotParams
-        self.imDim = pp.imDim
-
-        mpl.rcParams['font.family'] = ['serif'] # default is sans-serif
+        plt.close("all")
+        mpl.rcParams['font.family'] = ['serif']  # default is sans-serif
         mpl.rc('text', usetex=False)
-        mpl.rc('font', size=4)
-        cmap = mpl.cm.get_cmap('jet')  
+        mpl.rc('font', size=8)        
+        
+        fig, ax = plt.subplots(1, 1)
+        ax.plot(target[timestep], label = 'ground truth')
+        ax.plot(pred[timestep], label = 'prediction')
+        ax.legend()
+        ax.set_ylabel('u', fontsize=8)
+        ax.set_xlabel('x', fontsize=8)
+        ax.set_title(f'Prediction at timestep = {timestep}')
 
-        fig, ax = plt.subplots(1, len(plotData), figsize=(len(plotData)*2, 1*3))
-
-        for i in range(len(plotData)):
-            c_max = np.max(plotData[i])
-            c_min = np.min(plotData[i])
-            imParams = {'cmap':cmap, 'v_min':c_min, 'v_max':c_max}
-            self.Heat_imshow(plotData[i], ax[i], Dict2Class(imParams))
-            ax[i].set(title=f'{pp.titleLs[i]}')
-            ax[i].axis('off')
-
-        self.save_show(1, savePath, fig, bbox_inches='tight', pad_inches=0.1)
-    
+        self.save_show(1, savePath, fig, bbox_inches='tight', format='png')

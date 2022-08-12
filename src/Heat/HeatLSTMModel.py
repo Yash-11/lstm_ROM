@@ -21,7 +21,7 @@ class Model(nn.Module):
     def __init__(self, hp, args):
         super(Model, self).__init__()
 
-        self.info = args.logger.info
+        self.info = args.info
         self.device = args.device
         self.args = args
         self.hiddenDim = hp.hiddenDim
@@ -36,7 +36,7 @@ class Model(nn.Module):
         #     nn.ReLU(),
         #     nn.Linear(hp.hiddenDim, hp.latentDim))
 
-        self.loss = T.nn.MSELoss()
+        self.loss = T.nn.MSELoss(reduction = 'sum')
 
 
     def reset_hidden_states(self, for_batch=None):
@@ -72,7 +72,12 @@ class Model(nn.Module):
         """
         self.reset_hidden_states(for_batch=snapshot_Seq) if self.resetHidden else None
 
-        return self.rl(snapshot_Seq, (self.rl_h, self.rl_c))
+        # return self.rl(snapshot_Seq, (self.rl_h, self.rl_c))
+        output, hc = self.rl(snapshot_Seq, (self.rl_h, self.rl_c))
+        # out = self.l1(hc[0][-1])
+        # return out
+
+        return hc[0][-1]
 
 
     def loss_fn(self, pred, target):

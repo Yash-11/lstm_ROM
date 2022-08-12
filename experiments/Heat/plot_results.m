@@ -1,6 +1,6 @@
 %%
 clear all; close all; clc
-addpath(genpath('../../src/Heat/data'))
+addpath(genpath('./data'))
 addpath(genpath('./firstTry'))
 
 
@@ -19,8 +19,8 @@ target = h5read('predHDataTest_epoch4000_.hdf5','/target');
 faces = matConnec(1:64, :);
 
 %%
-Resultat(Gcoor, pred(:, 1), faces);
-Resultat(Gcoor, target(:, 1), faces);
+Resultat(Gcoor, pred(:, 50), faces);
+Resultat(Gcoor, target(:, 50), faces);
 
 function []= Resultat(xy,T,cn)
 

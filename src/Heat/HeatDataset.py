@@ -38,6 +38,7 @@ class DatasetClass(Dataset):
 
         seq_len = self.hp.seq_len
         numSampTrain = self.hp.numSampTrain
+        numSampValid = self.hp.numSampValid
         numSampTest = self.hp.numSampTest
         latentDim = self.hp.latentDim
         timeStepsUnroll = self.hp.timeStepsUnroll
@@ -49,10 +50,12 @@ class DatasetClass(Dataset):
 
         rawDataTrain = rawData[0 : numSampTrain +seq_len]
         rawDataTest = rawData[numSampTrain +seq_len : numSampTrain +seq_len + timeStepsUnroll+seq_len+1]
-        pdb.set_trace()
+        rawDataValid = rawDataTest
         
         self.dataTrainX = T.zeros((numSampTrain, seq_len, latentDim))
         self.dataTrainY = T.zeros((numSampTrain, latentDim))
+        self.dataValidX = T.zeros((numSampValid, seq_len, latentDim))
+        self.dataValidY = T.zeros((numSampValid, latentDim))
         self.dataTestX = T.zeros((numSampTest, seq_len, latentDim))
         self.dataTestY = T.zeros((numSampTest, timeStepsUnroll, latentDim))
 
@@ -60,6 +63,11 @@ class DatasetClass(Dataset):
             
             self.dataTrainX[i] = T.stack([rawDataTrain[i+sl,:] for sl in range(seq_len)], dim=0)
             self.dataTrainY[i] = rawDataTrain[i+seq_len,:]
+
+        for i in range(numSampValid):
+            
+            self.dataValidX[i] = T.stack([rawDataValid[i+sl,:] for sl in range(seq_len)], dim=0)
+            self.dataValidY[i] = rawDataValid[i+seq_len,:]
 
         for i in range(numSampTest):
             

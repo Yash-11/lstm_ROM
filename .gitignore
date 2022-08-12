@@ -123,6 +123,10 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# Data files
+*.csv
+*.json
+
 experiments/Heat/results*/
 experiments/Heat/firstTry
 experiments/Heat/data
@@ -131,7 +135,5 @@ experiments/Burgers/results*/
 experiments/Burgers/firstTry
 experiments/Burgers/data
 
-experiments/BurgersTCN/results*/
-experiments/BurgersTCN/data
-
-**/dataNoise.npy
+experiments/Stoker/results*/
+experiments/Stoker/data

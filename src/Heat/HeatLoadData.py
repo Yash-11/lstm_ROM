@@ -29,7 +29,7 @@ class LoadData:
     def __init__(self, hp, experPaths, args):
 
         self.hp = hp
-        self.info = args.logger.info if hasattr(args, 'logger') else print
+        self.info = args.info if hasattr(args, 'logger') else print
         self.dataDir = experPaths.data
         self.experPaths = experPaths
         

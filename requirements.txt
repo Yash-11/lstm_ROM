@@ -1,0 +1,4 @@
+mordred
+h5py
+pandas
+PrettyTable

@@ -15,7 +15,7 @@ experDir = dirname(realpath(__file__))
 projectDir = dirname(dirname(dirname(filePath)))
 sys.path.append(projectDir)
 
-from src.Utils import Parser, startSavingLogs, save_args
+from src.Utils import Arguments, startSavingLogs, save_args
 from src.Pipeline import ModelPipeline
 from src.AEPipeline import AEPipeline
 from src.Paths import Paths
@@ -64,19 +64,21 @@ def setHyperParams(hp):
     hp.seq_len = 5
 
     # training
-    hp.numIters = 4001
+    hp.numIters = 7001
     hp.lr = 0.00034
     hp.batchSizeTrain = 5
     hp.epochStartTrain = 0
 
     # testing
-    hp.loadWeightsEpoch = 4000
+    hp.loadWeightsEpoch = 3000
     hp.batchSizeTest = 1
     hp.timeStepsUnroll = 100
 
     # data
     hp.numSampTrain = 40
     hp.numSampTest = 1
+    hp.numSampValid  = 30
+    hp.numSampData = 500
 
     # logging
     hp.save = 1
@@ -100,6 +102,7 @@ def setHyperParams(hp):
     # AEdata
     hp.numSampTrainAE = 500
     hp.numSampTestAE = 1
+    hp.numSampValidAE = 30
 
     # logging
     hp.logIntervalAE = 50
@@ -116,12 +119,12 @@ def addPaths(ep, runName):
 
 if __name__ == '__main__':
 
-    args = Parser().parse()
+    args = Arguments()
     logger = logging.getLogger('my_module')
     logger.setLevel(logging.DEBUG)
 
     # set useful paths to instance `experPaths`
-    runName ='firstTry'
+    runName ='firstTry1'
     experPaths = Paths(experDir, args.os)
     addPaths(experPaths, runName)
 
@@ -129,6 +132,7 @@ if __name__ == '__main__':
     class HyperParams: pass
     hp = HyperParams()
     setHyperParams(hp)
+    hp.runName = runName
     
     # load saved hyper params for testing from old runs
     # hp = loadRunArgs(experPaths.run)
@@ -145,11 +149,11 @@ if __name__ == '__main__':
     modelPipeline = ModelPipeline(Model, hp, experPaths, rawData, DatasetClass, args)
 
     # train and test
-    modelPipeline.train()
+    # modelPipeline.train()
 
     hp.predData_Info = f'_'
-    # modelPipeline.test()
-    # aePipeline.decodeLatentVecs()
+    modelPipeline.test()
+    aePipeline.decodeLatentVecs()
 
     # save hyper params for the run
     sv_args = hp

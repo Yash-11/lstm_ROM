@@ -4,7 +4,7 @@ Auto-Encoder Dataset
 
 import pdb
 import logging
-from numpy import random
+import random
 from torch.utils.data.dataset import Dataset
 import numpy as np
 from numpy.random import choice
@@ -39,13 +39,23 @@ class AEDatasetClass(Dataset):
         rawData = self.rawData.data.T  # (maxNumTimeSteps, imDim)
         rawData, self.hp.meanAE, self.hp.stdAE = self.normalize(rawData)
 
-        self.dataTrainX = rawData  # (maxNumTimeSteps, imDim)
-        self.dataTrainY = rawData  # (maxNumTimeSteps, imDim)
+        ln = rawData.shape[0]
+        idxTr = list(range(ln))
+        idxVal = random.sample(idxTr, self.hp.numSampValidAE)
+        idxTe = random.sample(idxTr, self.hp.numSampTestAE)
+        for i in idxVal: idxTr.remove(i)
+        
+        self.dataTrainX = rawData[idxTr]  # (numSampTrainAE, imDim)
+        self.dataTrainY = rawData[idxTr]  # (numSampTrainAE, imDim)
 
-        self.dataTestX = rawData[10:11]  # (numSampTest, imDim)
-        self.dataTestY = rawData[10:11]  # (numSampTest, imDim)
+        self.dataValidX = rawData[idxVal]  # (numSampValidAE, imDim)
+        self.dataValidY = rawData[idxVal]  # (numSampValidAE, imDim)
 
-        self.dataEncodeX = rawData  # (maxNumTimeSteps, imDim)
+        self.dataTestX = rawData[idxTe]  # (numSampTestAE, imDim)
+        self.dataTestY = rawData[idxTe]  # (numSampTestAE, imDim)
+
+        self.dataEncodeX = rawData  # (maxNumTimeSteps, imDim) 
+        # pdb.set_trace()
 
 
     def normalize(self, data):
@@ -56,7 +66,10 @@ class AEDatasetClass(Dataset):
 
     
     def __len__(self):
-        len = self.hp.maxNumTimeSteps
+        if self.use == 'train': len = self.hp.numSampTrainAE
+        elif self.use == 'test': len = self.hp.numSampTestAE
+        elif self.use == 'encode': len = self.hp.maxNumTimeSteps
+        elif self.use == 'valid': len = self.hp.numSampValidAE
         return len
 
 
