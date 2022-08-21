@@ -2,7 +2,7 @@
 
 # %% ---------------------------------------------------------------------------
 
-import pdb
+
 import logging
 import torch as T
 import itertools
@@ -28,13 +28,14 @@ from src.Pipeline import ModelPipeline
 from src.AEPipeline import AEPipeline
 from src.Paths import Paths
 
-from src.Stoker.StokerDataset import DatasetClass
-from src.Stoker.StokerLSTMModel import Model
 from src.Stoker.StokerLoadData import LoadData
 from src.Stoker.StokerPlots import Plots
 
 from src.Stoker.StokerAEDataset import AEDatasetClass
 from src.Stoker.StokerCAEModel import AutoEncoder
+
+from src.Stoker.StokerDataset import DatasetClass
+from src.Stoker.StokerLSTMModel import Model
 
 SEED = 1234
 
@@ -49,31 +50,29 @@ class ParamsManager:
         
         # model 
         self.seq_len = [10]
-        self.num_channels = [[200, 200, 200], [50, 50, 50], [100, 100, 100]]
-        self.kernel_size = [3, 5]
-        self.latentDim = [1]
+        self.num_lstm_layers = [1, 2]
+        self.latentDim = [125]
         self.dropout = [0]
-        self.AE_Model = [1, 2, 3, 4]
+        self.AE_Model = [7]
 
         # training
         self.numIters = [3001]
-        self.lr = [3e-4]
-        self.batchSizeTrain = [16]
+        self.lr = [5e-4, 1e-4, 5e-5]
+        self.batchSizeTrain = [15]
         self.epochStartTrain = [0000]
         self.weight_decay = [1e-5]
 
         # testing
-        self.loadWeightsEpoch = [500]
+        self.loadWeightsEpoch = [0]
         self.batchSizeTest = [1]
-        self.timeStepsUnroll = [230]
+        self.timeStepsUnroll = [450]
 
         # data
-        self.numSampData = [250]
-        self.numSampTrain = [150]
-        self.numSampValid = [50]
+        self.numSampData = [500]
+        self.numSampTrain = [250]
+        self.numSampValid = [100]
         self.numSampTest = [1]
         self.reduce = [True]
-        self.Re = [300, 600]
 
         # logging
         self.save = [1]
@@ -90,14 +89,14 @@ class ParamsManager:
         self.epochStartTrainAE = [0]
 
         # AEtesting
-        self.loadAEWeightsEpoch = [4000]
+        self.loadAEWeightsEpoch = [3000]
         self.batchSizeTestAE = [1]
-        self.batchSizeEncode = [250]
+        self.batchSizeEncode = [500]
 
         # AEdata
-        self.numSampTrainAE = [200]
-        self.numSampTestAE = [1]
-        self.numSampValidAE = [50]
+        self.numSampTrainAE = [400]
+        self.numSampTestAE = [100]
+        self.numSampValidAE = [100]
 
         # logging
         self.logIntervalAE = [100]
@@ -207,7 +206,7 @@ def addName(hpDict):
     bs = hpDict['batchSizeTrain']
 
     rnd = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
-    runName = f'results_AE_lstm_ld{ld}_sql{sql}_lr{lr}_trSmp{trs}_bs{bs}_{rnd}'
+    runName = f'results_CAE_lstm_ld{ld}_sql{sql}_lr{lr}_trSmp{trs}_bs{bs}_{rnd}'
     hpDict["runName"] = runName
 
 

@@ -2,7 +2,7 @@
 
 # %% ---------------------------------------------------------------------------
 
-import pdb
+
 import logging
 import torch as T
 import itertools
@@ -56,8 +56,8 @@ class ParamsManager:
         self.AE_Model = [7]
 
         # training
-        self.numIters = [5001]
-        self.lr = [1e-4, 1e-5, 1e-6]
+        self.numIters = [8001]
+        self.lr = [5e-5, 1e-5, 5e-6]#, 1e-4, 1e-5, 1e-6]
         self.batchSizeTrain = [16]
         self.epochStartTrain = [0000]
         self.weight_decay = [1e-5]
@@ -286,10 +286,10 @@ manager.iterateComb(experPaths)
 # %% ---------------------------------------------------------------------------
 #                      Train particular hyperParam comb
 
-hp = HyperParams()
-hpDict = hp.__dict__
-addName(hpDict)
-automation(Dict2Class(hpDict), experPaths)
+# hp = HyperParams()
+# hpDict = hp.__dict__
+# addName(hpDict)
+# automation(Dict2Class(hpDict), experPaths)
 
 
 

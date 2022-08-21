@@ -2,7 +2,7 @@
 
 # %% ---------------------------------------------------------------------------
 
-import pdb
+
 import logging
 import torch as T
 import itertools
@@ -28,13 +28,14 @@ from src.Pipeline import ModelPipeline
 from src.AEPipeline import AEPipeline
 from src.Paths import Paths
 
-from src.Stoker.StokerDataset import DatasetClass
-from src.Stoker.StokerCNNModel import Model
 from src.Stoker.StokerLoadData import LoadData
 from src.Stoker.StokerPlots import Plots
 
 from src.Stoker.StokerAEDataset import AEDatasetClass
 from src.Stoker.StokerCAEModel import AutoEncoder
+
+from src.Stoker.StokerDataset import DatasetClass
+from src.Stoker.StokerCNNModel import Model
 
 SEED = 1234
 
@@ -212,7 +213,7 @@ def addName(hpDict):
         chn+=str(c)
 
     rnd = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
-    runName = f'100results_AE_CNNSwap_ld{ld}_sql{sql}_krs{krs}_lr{lr}_trSmp{trs}_ch{chn}_bs{bs}_{rnd}'
+    runName = f'8results_CAE_CNNSwap_ld{ld}_sql{sql}_krs{krs}_lr{lr}_trSmp{trs}_ch{chn}_bs{bs}_{rnd}'
     hpDict["runName"] = runName
 
 
@@ -261,7 +262,7 @@ def automation(hp, experPaths):
     
     if hp.reduce:
         aePipeline = AEPipeline(AutoEncoder, hp, experPaths, rawData, AEDatasetClass, args)
-        # aePipeline.train()
+        aePipeline.train()
         aePipeline.test()
         resultsAE(hp)
         LatentVecs = aePipeline.generateLatentVecs()  # (numSampTrainAE, latentDim)

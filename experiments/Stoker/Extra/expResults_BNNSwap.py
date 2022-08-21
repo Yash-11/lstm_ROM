@@ -1,6 +1,6 @@
  #%%
 
-import pdb
+
 import logging
 import torch as T
 import itertools
@@ -45,10 +45,6 @@ def addPaths(ep, runName):
     ep.code = f'../../src/StokerTCN'
     ep.run = f'{runName}'
 
-def round_neatest(x, s=50):
-    r = x%s
-    if r<=s//2: return x-r 
-    elif r>s//2: return x+(s-r)
 
 def results(runName, minValidEpoch):
     

@@ -2,7 +2,7 @@
 
 # %% ---------------------------------------------------------------------------
 
-import pdb
+
 import logging
 import torch as T
 import itertools
@@ -48,16 +48,16 @@ class ParamsManager:
 
     def __init__(self, ep):
         
-        # model 
-        self.latentDim = [4, 8, 16, 32]
-        self.seq_len = [10, 20]
-        self.num_channels = [[32, 32], [16, 16], [25, 25, 25]]
+        # model
+        self.seq_len = [5, 10, 13]
+        self.num_channels = [[200, 200], [64, 64], [32, 32], [16, 16]]
+        self.latentDim = [6, 8, 10, 16, 32]
         self.kernel_size = [3]
         self.dropout = [0]
         self.AE_Model = [1]
 
         # training
-        self.numIters = [4001]
+        self.numIters = [3001]
         self.lr = [3e-4]
         self.batchSizeTrain = [16]
         self.epochStartTrain = [0000]
@@ -92,7 +92,7 @@ class ParamsManager:
 
         # AEtesting
         self.loadAEWeightsEpoch = [3000]
-        self.batchSizeTestAE = [1]
+        self.batchSizeTestAE = [50]
         self.batchSizeEncode = [250]
 
         # AEdata
@@ -141,58 +141,72 @@ def HyperParams():
     class HyperParams: pass
     hp = HyperParams()
 
-    # model 
+    # model
+        # self.seq_len = [5, 10, 13]
+        # self.num_channels = [[200, 200], [64, 64], [32, 32], [16, 16]]
+        # self.latentDim = [6, 8, 10, 16, 32]
+        # self.kernel_size = [3]
+        # self.dropout = [0]
+        # self.AE_Model = [1]
+
+    # model Re 300
+    # hp.seq_len = 5
+    # hp.num_channels = [16, 16]
+    # hp.latentDim = 6
+    # hp.kernel_size = 3
+    # hp.dropout = 0
+    # hp.AE_Model = 1
+
+    # model Re 600
     hp.seq_len = 13
-    hp.num_channels = [12, 12]
-    hp.output_size = 6
+    hp.num_channels = [32, 32]
+    hp.latentDim = 6
     hp.kernel_size = 3
-    hp.latentDim = 32
     hp.dropout = 0
-    hp.AE_Model = 4
+    hp.AE_Model = 1
     
     # training
-    hp.numIters = 4001
-    hp.lr = 5e-4
-    hp.batchSizeTrain = 25
+    hp.numIters = 3001
+    hp.lr = 3e-4
+    hp.batchSizeTrain = 15
     hp.epochStartTrain = 0000
 
     # testing
-    hp.loadWeightsEpoch = 2500
+    hp.loadWeightsEpoch = 00
     hp.batchSizeTest = 1
-    hp.timeStepsUnroll = 450
+    hp.timeStepsUnroll = 230
 
     # data
-    hp.numSampData = 500
-    hp.numSampTrain = 250
-    hp.numSampValid = 100
+    hp.numSampData = 250
+    hp.numSampTrain = 150
+    hp.numSampValid = 50
     hp.numSampTest = 1
     hp.reduce = True
-    hp.Re = 300
+    hp.Re = 600
 
     # logging
     hp.save = 1
     hp.show = 0
     hp.saveLogs = 1
     hp.saveInterval = 20
-    hp.logInterval = 10
-    hp.checkpointInterval = 100
+    hp.logInterval = 50
+    hp.checkpointInterval = 50
 
     # AEtraining
-    hp.numItersAE = 2001
-    hp.lrAE = 0.0004
-    hp.weight_decay = 1e-4
+    hp.numItersAE = 3001
+    hp.lrAE = 0.0003
     hp.batchSizeTrainAE = 50
     hp.epochStartTrainAE = 0
 
     # AEtesting
-    hp.loadAEWeightsEpoch = 2000
-    hp.batchSizeTestAE = 1
-    hp.batchSizeEncode = 500
+    hp.loadAEWeightsEpoch = 3000
+    hp.batchSizeTestAE = 50
+    hp.batchSizeEncode = 250
 
     # AEdata
-    hp.numSampTrainAE = 400
-    hp.numSampTestAE = 1
-    hp.numSampValidAE = 100
+    hp.numSampTrainAE = 200
+    hp.numSampTestAE = 50
+    hp.numSampValidAE = 50
 
     # logging
     hp.logIntervalAE = 100
@@ -217,7 +231,7 @@ def addName(hpDict):
         chn+=str(c)
 
     rnd = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
-    runName = f'results_MlpAE_TCN_Re{Re}_ld{ld}_sql{sql}_krs{krs}_lr{lr}_trSmp{trs}_ch{chn}_bs{bs}_{rnd}'
+    runName = f'results_MlpAE_TCN_Re{Re}_ld{ld}_sql{sql}_krs{krs}_lr{lr}_ch{chn}_bs{bs}_{rnd}'
     hpDict["runName"] = runName
 
 

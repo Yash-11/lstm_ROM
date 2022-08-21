@@ -2,8 +2,9 @@
 class for model training and testing 
 """
 
+import enum
 from genericpath import exists
-import pdb
+
 from turtle import pd
 from unicodedata import decimal
 import h5py
@@ -34,17 +35,21 @@ class ModelPipeline():
         self.dataset = dataset
         self.path = experPaths
 
-        self.model = Model(hyperParams, args).to(args.device)
+        self.models = []
+        for i in range(self.hp.n_modelEnsemble):
+            self.models.append(Model(hyperParams, args).to(args.device))
         self.loss = T.nn.MSELoss(reduction = 'sum')
 
         self.info(self)
-        self.info(self.model)
+        self.info(self.models[0])
 
     
-    def saveModel(self, epoch, optimizer, scheduler, losses):
-        PATH = join(self.path.weights, f'weights_epoch{epoch}.tar')
+    def saveModel(self, model_idx, epoch, optimizer, scheduler, losses):
+        model = self.models[model_idx]
+
+        PATH = join(self.path.weights, f'weights{model_idx}_epoch{epoch}.tar')
         state = {'epoch': epoch,
-                 'model_state_dict': self.model.state_dict(),
+                 'model_state_dict': model.state_dict(),
                  'optimizer_state_dict': optimizer.state_dict(),
                  'scheduler_state_dict': scheduler.state_dict(), 
                  'losses': losses
@@ -54,21 +59,30 @@ class ModelPipeline():
 
         plt.figure()
         plt.plot(losses['train'], label='train')
-        plt.plot(losses['valid'], label='valid')
         plt.xlabel('Epochs')
         plt.ylabel('MSE')
         plt.title('Training Loss')
         plt.legend()
-        # plt.yscale("log")
-        plt.savefig(join(self.path.run, f'Loss_plot.png'))
+        plt.savefig(join(self.path.run, f'Loss_plot{model_idx}.png'))
         plt.close()
+
+        plt.figure()
+        plt.plot(losses['valid'], label='valid')        
+        plt.xlabel('Epochs')
+        plt.ylabel('MSE')
+        plt.title('Validation Loss')
+        plt.legend()
+        plt.yscale("log")
+        plt.savefig(join(self.path.run, f'ValidLoss_plot{model_idx}.png'))        
+        plt.close()
+
         plt.close('all')
 
 
-    def loadModel(self, epoch, optimizer=None, scheduler=None, losses=None):
+    def loadModel(self, model_idx, epoch, optimizer=None, scheduler=None, losses=None):
         """Loads pre-trained network from file"""
         try:
-            PATH = join(self.path.weights, f'weights_epoch{epoch}.tar')
+            PATH = join(self.path.weights, f'weights{model_idx}_epoch{epoch}.tar')
             checkpoint = T.load(PATH, map_location=T.device(self.args.device))
             checkpoint_epoch = checkpoint['epoch']
             self.info(f'Found model at epoch: {checkpoint_epoch}')
@@ -81,7 +95,7 @@ class ModelPipeline():
             optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         if (not scheduler is None):
             scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
-        self.model.load_state_dict(checkpoint['model_state_dict'])
+        self.models[model_idx].load_state_dict(checkpoint['model_state_dict'])
         if (not losses is None):
             losses = checkpoint['losses']
         return optimizer, scheduler, losses
@@ -94,8 +108,9 @@ class ModelPipeline():
         return description
 
     
-    def trainingEpoch(self, optimizer, train_loader, epoch):
-        self.model.train()
+    def trainingEpoch(self, model_idx, optimizer, train_loader, epoch):
+        model = self.models[model_idx]
+        model.train()
         running_loss = 0
 
         for batchIdx, data in enumerate(train_loader):
@@ -105,8 +120,8 @@ class ModelPipeline():
             input = data[0]  # (currentBatchSize, seq_len, latentDim)
             target = data[1]  # (currentBatchSize, latentDim)
 
-            mu, var = self.model(input)  # (currentBatchSize, latentDim)
-            loss = self.model.loss_fn(mu, target, var)
+            mu, var = model(input)  # (currentBatchSize, latentDim)
+            loss = model.loss_fn(mu, target, var)
                                               
             loss.backward()
             optimizer.step()
@@ -115,13 +130,14 @@ class ModelPipeline():
 
 
 
-    def saveMinLoss(self, losses):
+    def saveMinLoss(self, model_idx, losses):
         minTrainLoss = min(losses['train'])
-        minValidLoss = min(losses['valid'])
+        dd = self.hp.checkpointInterval
+        minValidLoss = min(losses['valid'][::dd])
         minTrainEpoch = losses['train'].index(minTrainLoss)        
         minValidEpoch = losses['valid'].index(minValidLoss)
 
-        info = {'name': self.hp.runName, 'minValidLoss': minValidLoss, 'minValidEpoch': minValidEpoch, 
+        info = {'name': self.hp.runName+f'model{model_idx}', 'minValidLoss': minValidLoss, 'minValidEpoch': minValidEpoch, 
         'minTrainLoss': minTrainLoss, 'minTrainEpoch': minTrainEpoch}
 
         path = join(self.path.experDir, f'minLoss.csv')
@@ -132,33 +148,39 @@ class ModelPipeline():
             df = pd.DataFrame(columns=['name', 'minValidLoss', 'minValidEpoch', 'minTrainLoss', 'minTrainEpoch'])
         
         df = df.append(info, ignore_index=True)
-        # print(df.head)
         df = df.sort_values(by=['minValidLoss'])
         df.to_csv(path, index=False)
 
-    
     
     def train(self):
         hp = self.hp
 
         train_dataset = self.dataset(self.rawData, 'train', self.path, hp, device=self.args.device, info=self.info)
-        train_loader = DataLoader(train_dataset, batch_size=hp.batchSizeTrain, shuffle=True)  
+        train_loader = DataLoader(train_dataset, batch_size=hp.batchSizeTrain, shuffle=True) 
 
-        optimizer = T.optim.Adam(self.model.parameters(), lr=hp.lr,  weight_decay=1e-4)
+        for model_idx, model in enumerate(self.models):
+            self.trainModel(model_idx, train_dataset, train_loader)
+    
+    
+    def trainModel(self, model_idx, train_dataset, train_loader):
+        hp = self.hp 
+        model = self.models[model_idx]
+
+        optimizer = T.optim.Adam(model.parameters(), lr=hp.lr,  weight_decay=1e-4)
         lr_lambda = lambda epoch: 1 ** epoch
         scheduler = LambdaLR(optimizer, lr_lambda=lr_lambda)
         losses = {'train': [], 'valid': []}
 
         # ------------------- load model from checkpoint -----------------------
         if hp.epochStartTrain:
-            optimizer, scheduler, losses = self.loadModel(hp.epochStartTrain, optimizer, scheduler, losses)
+            optimizer, scheduler, losses = self.loadModel(model_idx, hp.epochStartTrain, optimizer, scheduler, losses)
 
         for epoch in range(hp.epochStartTrain+1, hp.numIters):         
 
-            self.model.train()
+            model.train()
             epochLr = optimizer.param_groups[0]['lr']  
             
-            loss = self.trainingEpoch(optimizer, train_loader, epoch)/hp.numSampTrain
+            loss = self.trainingEpoch(model_idx, optimizer, train_loader, epoch)/hp.numSampTrain
             if T.isnan(loss):break
             losses['train'].append(loss.item())
 
@@ -166,19 +188,19 @@ class ModelPipeline():
             scheduler.step()
 
             # -------------------------- validate -------------------------------
-            self.model.eval()
-            pred, var = self.model(train_dataset.dataValidX.to(self.args.device))
+            model.eval()
+            pred, var = model(train_dataset.dataValidX.to(self.args.device))
             valid_loss = self.loss(train_dataset.dataValidY, pred.cpu())/hp.numSampValid
             losses['valid'].append(valid_loss.item())
 
             # ------------------- Save model periodically ----------------------
             if (epoch % hp.checkpointInterval == 0) and (epoch > 0):
-                self.saveModel(epoch, optimizer, scheduler, losses)
+                self.saveModel(model_idx, epoch, optimizer, scheduler, losses)
 
             # ------------------------ print progress --------------------------
             if epoch % hp.logInterval == 0: self.info(f'({epoch}) Training loss: {loss:.8f} Validation loss: {valid_loss:.8f}')
         
-        self.saveMinLoss(losses)
+        self.saveMinLoss(model_idx, losses)
 
     
     def savePredictions(self, predData, epoch, trainBool):
@@ -207,9 +229,9 @@ class ModelPipeline():
         test_loader = DataLoader(test_dataset, batch_size=hp.batchSizeTest, shuffle=False)
 
         # ------------------------ Load saved weights --------------------------
-        epoch = hp.loadWeightsEpoch
-        self.loadModel(epoch)
-        self.model.eval()
+        for model_idx, epoch_i in enumerate(hp.loadWeightsEpoch):
+            self.loadModel(model_idx, epoch_i)
+            self.models[model_idx].eval()
 
         predMuLs = []; predVarLs= []; dataLs = []
 
@@ -222,8 +244,19 @@ class ModelPipeline():
 
             flag = 0
             for i in range(hp.timeStepsUnroll):
-                pred_i, var_i = self.model(last_N_seqsMu)  # (currentBatchSize, latentDim)
 
+                pred_i = 0
+                var_i = 0
+
+                for model_idx, model in enumerate(self.models):
+                    mean_ij, var_ij = model(last_N_seqsMu)  # (currentBatchSize, latentDim)
+
+                    pred_i = pred_i + mean_ij
+                    var_i = var_i + var_ij + mean_ij**2
+
+                pred_i = pred_i/hp.n_modelEnsemble
+                var_i = var_i/hp.n_modelEnsemble - pred_i**2
+                
                 last_N_seqsMu = T.cat((last_N_seqsMu[:, 1:], pred_i[:, None]), dim=1)
 
                 if flag:
@@ -243,5 +276,5 @@ class ModelPipeline():
         
         predData = T.cat(predMuLs, dim=0), T.cat(dataLs, dim=0), T.cat(predVarLs, dim=0)  # (numSampTest, timeStepModel, M, numNodes)
 
-        self.savePredictions(predData, epoch, False) 
+        self.savePredictions(predData, '_'.join(str(e) for e in hp.loadWeightsEpoch), False) 
         return predData[0][0].detach().cpu().numpy()

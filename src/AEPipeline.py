@@ -2,7 +2,7 @@
 class for Auto-Encoder training
 """
 
-import pdb
+
 from turtle import pd
 import h5py
 import numpy as np
@@ -264,5 +264,4 @@ class AEPipeline():
         pred = self.denormalize(pred, self.hp.meanAE, self.hp.stdAE)
         target = self.denormalize(target, self.hp.meanAE, self.hp.stdAE)
 
-        # pdb.set_trace()
         self.saveOutputs(pred, target)

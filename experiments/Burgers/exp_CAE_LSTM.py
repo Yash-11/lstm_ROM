@@ -2,7 +2,7 @@
 
 # %% ---------------------------------------------------------------------------
 
-import pdb
+
 import logging
 import torch as T
 import itertools
@@ -28,13 +28,14 @@ from src.Pipeline import ModelPipeline
 from src.AEPipeline import AEPipeline
 from src.Paths import Paths
 
-from src.Burgers.BurgersDataset import DatasetClass
-from src.Burgers.BurgersLSTMModel import Model
 from src.Burgers.BurgersLoadData import LoadData
 from src.Burgers.BurgersPlots import Plots
 
 from src.Burgers.BurgersAEDataset import AEDatasetClass
 from src.Burgers.BurgersCAEModel import AutoEncoder
+
+from src.Burgers.BurgersDataset import DatasetClass
+from src.Burgers.BurgersLSTMModel import Model
 
 SEED = 1234
 
@@ -49,21 +50,20 @@ class ParamsManager:
         
         # model 
         self.seq_len = [10]
-        self.num_channels = [[200, 200], [50, 50, 50], [100, 100, 100]]
-        self.kernel_size = [3, 5]
-        self.latentDim = [1]
+        self.num_lstm_layers = [1, 2]
+        self.latentDim = [50]
         self.dropout = [0]
-        self.AE_Model = [1, 2, 3, 4]
+        self.AE_Model = [7]
 
         # training
         self.numIters = [3001]
-        self.lr = [3e-4]
-        self.batchSizeTrain = [16]
+        self.lr = [5e-4, 1e-4]
+        self.batchSizeTrain = [15]
         self.epochStartTrain = [0000]
         self.weight_decay = [1e-5]
 
         # testing
-        self.loadWeightsEpoch = [500]
+        self.loadWeightsEpoch = [0]
         self.batchSizeTest = [1]
         self.timeStepsUnroll = [230]
 
@@ -80,7 +80,7 @@ class ParamsManager:
         self.show = [0]
         self.saveLogs = [1]
         self.saveInterval = [20]
-        self.logInterval = [10]
+        self.logInterval = [50]
         self.checkpointInterval = [50]
 
         # AEtraining
@@ -90,13 +90,13 @@ class ParamsManager:
         self.epochStartTrainAE = [0]
 
         # AEtesting
-        self.loadAEWeightsEpoch = [4000]
-        self.batchSizeTestAE = [1]
+        self.loadAEWeightsEpoch = [3000]
+        self.batchSizeTestAE = [50]
         self.batchSizeEncode = [250]
 
         # AEdata
         self.numSampTrainAE = [200]
-        self.numSampTestAE = [1]
+        self.numSampTestAE = [50]
         self.numSampValidAE = [50]
 
         # logging
@@ -143,9 +143,8 @@ def HyperParams():
     # model 
     hp.seq_len = 10
     hp.num_lstm_layers = 1
-    hp.latentDim = 50
     hp.dropout = 0
-    hp.AE_Model = 5
+    hp.AE_Model = 7
     
     # training
     hp.numIters = 3001
@@ -206,9 +205,10 @@ def addName(hpDict):
     lr = hpDict['lr']
     trs = hpDict['numSampTrain']
     bs = hpDict['batchSizeTrain']
+    AEmodel = hpDict['AE_Model']
 
     rnd = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
-    runName = f'13results_AE_LSTM_Re{Re}_sql{sql}_lr{lr}_trSmp{trs}_bs{bs}_{rnd}'
+    runName = f'results_CAE_LSTM_Re{Re}_sql{sql}_lr{lr}_bs{bs}_AE{AEmodel}_{rnd}'
     hpDict["runName"] = runName
 
 
@@ -241,6 +241,12 @@ def resultsAE(hp):
 
 
 def automation(hp, experPaths):
+    # if hp.AE_Model == 8:
+    #     hp.latentDim = 14
+    # elif hp.AE_Model == 4:
+    #     hp.latentDim = 25
+    # else:
+    #     pass
 
     # set useful paths to instance `experPaths`
     addPaths(experPaths, hp.runName)
@@ -274,17 +280,13 @@ experPaths = Paths(experDir, args.os)
 
 # %% ---------------------------------------------------------------------------
 #                   Train all combinations of hyperParams
-# manager = ParamsManager(experPaths)
-# manager.iterateComb(experPaths)
+manager = ParamsManager(experPaths)
+manager.iterateComb(experPaths)
 
 # %% ---------------------------------------------------------------------------
 #                      Train particular hyperParam comb
 
-hp = HyperParams()
-hpDict = hp.__dict__
-addName(hpDict)
-automation(Dict2Class(hpDict), experPaths)
-
-
-
-
+# hp = HyperParams()
+# hpDict = hp.__dict__
+# addName(hpDict)
+# automation(Dict2Class(hpDict), experPaths)

@@ -3,7 +3,7 @@ class for model training and testing
 """
 
 from genericpath import exists
-import pdb
+
 from turtle import pd
 from unicodedata import decimal
 import h5py
@@ -117,7 +117,8 @@ class ModelPipeline():
 
     def saveMinLoss(self, losses):
         minTrainLoss = min(losses['train'])
-        minValidLoss = min(losses['valid'])
+        dd = self.hp.checkpointInterval
+        minValidLoss = min(losses['valid'][::dd])
         minTrainEpoch = losses['train'].index(minTrainLoss)        
         minValidEpoch = losses['valid'].index(minValidLoss)
 
@@ -223,9 +224,7 @@ class ModelPipeline():
             flag = 0
             for i in range(hp.timeStepsUnroll):
                 pred_i = self.model(last_N_seqs)  # (currentBatchSize, latentDim)
-                # pred_i = pred_i[0][0]
-                # pdb.set_trace()
-                # pred_i = _[:, -1]
+                
                 last_N_seqs = T.cat((last_N_seqs[:, 1:], pred_i[:, None]), dim=1)
 
                 if flag:
@@ -245,6 +244,5 @@ class ModelPipeline():
         
         predData = T.cat(predLs, dim=0), T.cat(dataLs, dim=0)  # (numSampTest, timeStepModel, M, numNodes)
 
-        # pdb.set_trace()
         self.savePredictions(predData, epoch, False)
         return predData[0][0].detach().cpu().numpy()

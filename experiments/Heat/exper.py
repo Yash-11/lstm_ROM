@@ -3,7 +3,7 @@ Main script for experiment 'Basic'
 for setting params and training/testing
 """
 
-import pdb
+
 import logging
 import torch as T
 

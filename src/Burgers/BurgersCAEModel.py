@@ -10,7 +10,7 @@ from torch import Tensor
 import torch.nn.functional as F
 from torch.nn import Parameter, Linear
 
-import pdb
+
 import os.path as osp
 SEED = 1234
 
@@ -237,8 +237,62 @@ class AutoEncoder(nn.Module):
 
                 nn.ConvTranspose1d(8, 1, kernel_size=3, stride=1, padding=1),
             )
+        if hp.AE_Model == 8:
+            self.n_chLatent = 1
+            self.encoder = nn.Sequential(
+                nn.Conv1d(1, 8, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm1d(8),
+                nn.ReLU(),
+                nn.AvgPool1d(kernel_size=3, stride=2, padding=1),
 
-    def forward(self, x):
+                nn.Conv1d(8, 32, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm1d(32),
+                nn.ReLU(),
+                nn.AvgPool1d(kernel_size=3, stride=2, padding=1),
+
+                nn.Conv1d(32, 64, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm1d(64),
+                nn.ReLU(),
+                nn.AvgPool1d(kernel_size=3, stride=2, padding=1),
+
+                nn.Conv1d(64, 32, kernel_size=3, stride=1, padding=2),
+                nn.BatchNorm1d(32),
+                nn.ReLU(),
+                nn.AvgPool1d(kernel_size=3, stride=2, padding=1),
+
+                nn.Conv1d(32, 1, kernel_size=3, stride=1, padding=1),
+            )
+
+            self.aa = nn.ConvTranspose1d(1, 32, kernel_size=3, stride=1, padding=1)
+            self.ab = nn.Upsample(scale_factor=2)
+            self.ac = nn.ConvTranspose1d(32, 64, kernel_size=3, stride=1, padding=1)
+
+            self.decoder = nn.Sequential(
+                nn.ConvTranspose1d(1, 32, kernel_size=3, stride=1, padding=2),  # [12]
+                nn.BatchNorm1d(32),
+                nn.ReLU(),
+                nn.Upsample(scale_factor=2),  # [24]
+
+                nn.ConstantPad1d((0, 1), 0),  # [25]
+                nn.ConvTranspose1d(32, 64, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm1d(64),
+                nn.ReLU(),
+                nn.Upsample(scale_factor=2),
+                
+                nn.ConvTranspose1d(64, 32, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm1d(32),
+                nn.ReLU(),
+                nn.Upsample(scale_factor=2),
+
+                nn.ConvTranspose1d(32, 8, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm1d(8),
+                nn.ReLU(),
+                nn.Upsample(scale_factor=2),
+
+                nn.ConvTranspose1d(8, 1, kernel_size=3, stride=1, padding=1),
+            )
+
+    def _forward(self, x):
 
         if x.shape[-1] != 200:
             # x [1, currentBatchSize, latentDim*n_chLatent]
@@ -252,6 +306,26 @@ class AutoEncoder(nn.Module):
             out = out[:, 0][None]
 
             # out [1, currentBatchSize, imDim]
+            return out
+        else:
+            # x [currentBatchSize, imDim]
+            n = x.shape[0]
+            y = self.encoder(x[:, None])
+            z = self.decoder(y)
+            return z[:, 0],y.reshape((n, -1))
+
+    def forward(self, x):
+
+        if x.shape[-1] != 200:
+            # x [currentBatchSize, latentDim*n_chLatent]
+            x1 = x.reshape((tuple(x.shape[:-1]) + (self.n_chLatent, -1)))
+
+            # x [currentBatchSize, n_chLatent, latentDim]
+            # out [currentBatchSize, 1, imDim]
+            out = self.decoder(x1)
+            out = out[:, 0]
+
+            # out [currentBatchSize, imDim]
             return out
         else:
             # x [currentBatchSize, imDim]

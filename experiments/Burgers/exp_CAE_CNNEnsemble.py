@@ -2,7 +2,7 @@
 
 # %% ---------------------------------------------------------------------------
 
-import pdb
+
 import logging
 import torch as T
 import itertools
@@ -54,11 +54,12 @@ class ParamsManager:
         self.latentDim = [50]
         self.dropout = [0]
         self.AE_Model = [7]
+        self.n_modelEnsemble = [10]
 
         # training
         self.numIters = [3001]
         self.lr = [1e-4, 1e-5, 1e-6]
-        self.batchSizeTrain = [16]
+        self.batchSizeTrain = [15]
         self.epochStartTrain = [0000]
         self.weight_decay = [1e-5]
 
@@ -142,16 +143,17 @@ def HyperParams():
 
     # model 
     hp.seq_len = 10
-    hp.num_channels = [50, 50]#[25, 25]
+    hp.num_channels = [50, 50, 50]
     hp.kernel_size = 3
-    hp.latentDim = 4
+    hp.latentDim = 50
     hp.dropout = 0
     hp.AE_Model = 7
+    hp.n_modelEnsemble = 10
     
     # training
-    hp.numIters = 3001
-    hp.lr = 3e-4
-    hp.batchSizeTrain = 16
+    hp.numIters = 52
+    hp.lr = 5e-5
+    hp.batchSizeTrain = 15
     hp.epochStartTrain = 0000
     hp.weight_decay = 1e-5
 
@@ -173,7 +175,7 @@ def HyperParams():
     hp.show = 0
     hp.saveLogs = 1
     hp.saveInterval = 20
-    hp.logInterval = 10
+    hp.logInterval = 25
     hp.checkpointInterval = 50
 
     # AEtraining
@@ -210,12 +212,13 @@ def addName(hpDict):
     bs = hpDict['batchSizeTrain']
     ch = hpDict['num_channels']
     krs = hpDict['kernel_size']
+    AE_Model = hpDict['AE_Model']
     chn = ""
     for c in ch:
         chn+=str(c)
 
     rnd = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
-    runName = f'results_CAE_CNNEns_Re{Re}_ld{ld}_sql{sql}_krs{krs}_lr{lr}_trSmp{trs}_ch{chn}_bs{bs}_{rnd}'
+    runName = f'results_CAE_CNNEns_Re{Re}_ld{ld}_sql{sql}_krs{krs}_lr{lr}_trSmp{trs}_ch{chn}_bs{bs}_AE{AE_Model}_{rnd}'
     hpDict["runName"] = runName
 
 
@@ -283,8 +286,8 @@ experPaths = Paths(experDir, args.os)
 
 # %% ---------------------------------------------------------------------------
 #                   Train all combinations of hyperParams
-manager = ParamsManager(experPaths)
-manager.iterateComb(experPaths)
+# manager = ParamsManager(experPaths)
+# manager.iterateComb(experPaths)
 
 # %% ---------------------------------------------------------------------------
 #                      Train particular hyperParam comb

@@ -2,7 +2,7 @@
 
 # %% ---------------------------------------------------------------------------
 
-import pdb
+
 import logging
 import torch as T
 import itertools
@@ -56,7 +56,7 @@ class ParamsManager:
         self.AE_Model = [1]
 
         # training
-        self.numIters = [3001]
+        self.numIters = [4001]
         self.lr = [3e-4]
         self.batchSizeTrain = [16]
         self.epochStartTrain = [0000]
@@ -213,7 +213,7 @@ def addName(hpDict):
         chn+=str(c)
 
     rnd = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
-    runName = f'results_AE_CNNSwap_ld{ld}_sql{sql}_krs{krs}_lr{lr}_trSmp{trs}_ch{chn}_bs{bs}_{rnd}'
+    runName = f'results_MlpAE_CNN_ld{ld}_sql{sql}_krs{krs}_lr{lr}_ch{chn}_bs{bs}_{rnd}'
     hpDict["runName"] = runName
 
 

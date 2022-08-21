@@ -1,7 +1,7 @@
 """
 Set of Plots for Heat results 
 """
-import pdb
+
 from typing import Dict, Any
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation

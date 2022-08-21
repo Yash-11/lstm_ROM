@@ -2,7 +2,7 @@
 
 # %% ---------------------------------------------------------------------------
 
-import pdb
+
 import logging
 import torch as T
 import itertools
@@ -28,13 +28,14 @@ from src.Pipeline import ModelPipeline
 from src.AEPipeline import AEPipeline
 from src.Paths import Paths
 
-from src.Burgers.BurgersDataset import DatasetClass
-from src.Burgers.BurgersCNNModel import Model
 from src.Burgers.BurgersLoadData import LoadData
 from src.Burgers.BurgersPlots import Plots
 
 from src.Burgers.BurgersAEDataset import AEDatasetClass
 from src.Burgers.BurgersCAEModel import AutoEncoder
+
+from src.Burgers.BurgersDataset import DatasetClass
+from src.Burgers.BurgersCNNModel import Model
 
 SEED = 1234
 

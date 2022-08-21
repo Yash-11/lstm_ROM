@@ -3,7 +3,7 @@ Provide Paths to directory
 for weights, data etc.
 """
 
-import pdb
+
 import os.path as osp
 import os
 from os.path import dirname, realpath
