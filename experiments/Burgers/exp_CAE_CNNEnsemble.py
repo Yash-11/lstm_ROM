@@ -28,13 +28,14 @@ from src.EnsemblePipeline import ModelPipeline
 from src.AEPipeline import AEPipeline
 from src.Paths import Paths
 
-from src.Burgers.BurgersDataset import DatasetClass
-from src.Burgers.BurgersCNNEnsembleModel import Model
 from src.Burgers.BurgersLoadData import LoadData
 from src.Burgers.BurgersPlots import Plots
 
 from src.Burgers.BurgersAEDataset import AEDatasetClass
 from src.Burgers.BurgersCAEModel import AutoEncoder
+
+from src.Burgers.BurgersDataset import DatasetClass
+from src.Burgers.BurgersCNNEnsembleModel import Model
 
 SEED = 1234
 

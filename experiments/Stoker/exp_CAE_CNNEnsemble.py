@@ -28,13 +28,14 @@ from src.EnsemblePipeline import ModelPipeline
 from src.AEPipeline import AEPipeline
 from src.Paths import Paths
 
-from src.Stoker.StokerDataset import DatasetClass
-from src.Stoker.StokerCNNEnsembleModel import Model
 from src.Stoker.StokerLoadData import LoadData
 from src.Stoker.StokerPlots import Plots
 
 from src.Stoker.StokerAEDataset import AEDatasetClass
 from src.Stoker.StokerCAEModel import AutoEncoder
+
+from src.Stoker.StokerDataset import DatasetClass
+from src.Stoker.StokerCNNEnsembleModel import Model
 
 SEED = 1234
 
@@ -140,31 +141,31 @@ def HyperParams():
     hp = HyperParams()
 
     # model 
-    hp.latentDim = 100
     hp.seq_len = 20
-    hp.num_inputs = hp.latentDim
-    hp.num_channels = [64, 64, 1]
-    hp.output_size = hp.latentDim
+    hp.num_channels = [100, 100, 100]
     hp.kernel_size = 3
-    hp.dropout = 0.2
+    hp.latentDim = 125
+    hp.dropout = 0
+    hp.AE_Model = 7
+    hp.n_modelEnsemble = 10
 
     # training
-    hp.numIters = 4001
-    hp.lr = 0.0003
-    hp.batchSizeTrain = 25
-    
+    hp.numIters = 3002
+    hp.lr = 5e-6
+    hp.batchSizeTrain = 16
     hp.epochStartTrain = 0000
+    hp.weight_decay = 1e-5
 
     # testing
-    hp.loadWeightsEpoch = 200
+    hp.loadWeightsEpoch = 500
     hp.batchSizeTest = 1
-    hp.timeStepsUnroll = 230
+    hp.timeStepsUnroll = 450
 
     # data
-    hp.numSampTrain = 280
+    hp.numSampData = 500
+    hp.numSampTrain = 250
     hp.numSampValid = 100
     hp.numSampTest = 1
-    hp.numSampData = 500
     hp.reduce = True
 
     # logging
@@ -172,10 +173,10 @@ def HyperParams():
     hp.show = 0
     hp.saveLogs = 1
     hp.saveInterval = 20
-    hp.logInterval = 25
+    hp.logInterval = 10
     hp.checkpointInterval = 50
 
-        # AEtraining
+    # AEtraining
     hp.numItersAE = 3001
     hp.lrAE = 0.0003
     hp.batchSizeTrainAE = 50
@@ -207,6 +208,7 @@ def addName(hpDict):
     bs = hpDict['batchSizeTrain']
     ch = hpDict['num_channels']
     krs = hpDict['kernel_size']
+    AE_Model = hpDict['AE_Model']
     chn = ""
     for c in ch:
         chn+=str(c)
@@ -280,16 +282,16 @@ experPaths = Paths(experDir, args.os)
 
 # %% ---------------------------------------------------------------------------
 #                   Train all combinations of hyperParams
-manager = ParamsManager(experPaths)
-manager.iterateComb(experPaths)
+# manager = ParamsManager(experPaths)
+# manager.iterateComb(experPaths)
 
 # %% ---------------------------------------------------------------------------
 #                      Train particular hyperParam comb
 
-# hp = HyperParams()
-# hpDict = hp.__dict__
-# addName(hpDict)
-# automation(Dict2Class(hpDict), experPaths)
+hp = HyperParams()
+hpDict = hp.__dict__
+addName(hpDict)
+automation(Dict2Class(hpDict), experPaths)
 
 
 

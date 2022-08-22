@@ -134,6 +134,8 @@ experiments/Heat/data
 experiments/Burgers/results*/
 experiments/Burgers/firstTry
 experiments/Burgers/data
+# experiments/Burgers/Extra
 
 experiments/Stoker/results*/
 experiments/Stoker/data
+# experiments/Stoker/Extra
