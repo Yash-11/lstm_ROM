@@ -105,11 +105,12 @@ def results(runName, minValidEpoch):
     pred = predData['pred'][:]
     target = predData['target'][:]
     var = predData['var'][:]
+    var = var**0.5
     loss = LA.norm((pred - target), axis=1) / LA.norm(target, axis=1) *100
 
     timeStepsUnroll = hp.numSampTrain +hp.seq_len*2+ np.arange(0, hp.timeStepsUnroll, 10)
 
-    savePath = join(experPaths.run, f'CAE_CNNEns_Bur_Error_epoch{loadWeightsEpoch}')
+    savePath = join(experPaths.run, f'CAE_CNNEns_BurRe{hp.Re}_Error_epoch{loadWeightsEpoch}')
     plotParams = {'xlabel':'Time Step', 'ylabel': 'Percentage Error', 
                 'xticks':np.arange(0, hp.timeStepsUnroll, 10), 'yticks':np.arange(300),
                 'xticklabels':timeStepsUnroll, 'yticklabels':np.arange(300),
@@ -121,17 +122,17 @@ def results(runName, minValidEpoch):
     # --------------------------------------------------------------------------
     #                        image plot for prediction
 
-    savePath = join(experPaths.run, f'CAE_CNNEns_Bur_predPlot{0}_epoch{loadWeightsEpoch}')
+    savePath = join(experPaths.run, f'CAE_CNNEns_BurRe{hp.Re}_predPlot{0}_epoch{loadWeightsEpoch}')
     plotParams = {'tStepModelPlot':[2]*hp.numSampTest}
     plotData = {'pred': pred, 'target': target}
-    savePath = join(experPaths.run, f'CAE_CNNEns_Bur_predimPlot{0}_epoch{loadWeightsEpoch}')
+    savePath = join(experPaths.run, f'CAE_CNNEns_BurRe{hp.Re}_predimPlot{0}_epoch{loadWeightsEpoch}')
     Plots().implotPred(plotData, Dict2Class(plotParams), savePath)
 
     # --------------------------------------------------------------------------
     #                        graph plot for prediction
 
     for timestepplot in [20, 40, 60]:
-        savePath = join(experPaths.run, f'CAE_CNNEns_Bur_predgraphPlot{timestepplot}_epoch{loadWeightsEpoch}')
+        savePath = join(experPaths.run, f'CAE_CNNEns_BurRe{hp.Re}_predgraphPlot{timestepplot}_epoch{loadWeightsEpoch}')
         plotParams = {'tStepModelPlot':[2]*hp.numSampTest}
         plotData = {'pred': pred[hp.numSampTrain+hp.seq_len-1:], 
                     'target': target[hp.numSampTrain+hp.seq_len-1:],

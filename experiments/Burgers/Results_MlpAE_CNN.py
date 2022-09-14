@@ -22,18 +22,18 @@ sys.path.append(projectDir)
 
 #%%'
 from src.Utils import Arguments, Dict2Class, startSavingLogs, save_args, loadRunArgs
-from src.EnsemblePipeline import ModelPipeline
-from src.AEPipelineEnsemble import AEPipeline
+from src.Pipeline import ModelPipeline
+from src.AEPipeline import AEPipeline
 from src.Paths import Paths
 
-from src.Stoker.StokerLoadData import LoadData
-from src.Stoker.StokerPlots import Plots
+from src.Burgers.BurgersLoadData import LoadData
+from src.Burgers.BurgersPlots import Plots
 
-from src.Stoker.StokerAEDataset import AEDatasetClass
-from src.Stoker.StokerCAEModel import AutoEncoder
+from src.Burgers.BurgersAEDataset import AEDatasetClass
+from src.Burgers.BurgersAEModel import AutoEncoder
 
-from src.Stoker.StokerDataset import DatasetClass
-from src.Stoker.StokerCNNEnsembleModel import Model
+from src.Burgers.BurgersDataset import DatasetClass
+from src.Burgers.BurgersCNNModel import Model
 
 
 T.manual_seed(0)
@@ -44,7 +44,7 @@ random.seed(0)
 def addPaths(ep, runName):
     ep.weights = f'{runName}/checkpoints'
     ep.data = f'./data'
-    ep.code = f'../../src/StokerTCN'
+    ep.code = f'../../src/Burgers'
     ep.run = f'{runName}'
 
 
@@ -68,17 +68,14 @@ def results(runName, minValidEpoch):
     startSavingLogs(args, experPaths.run, logger)
     rawData = LoadData(hp, experPaths, args)    
 
-    # test 
-    if hp.reduce:
-        aePipeline = AEPipeline(AutoEncoder, hp, experPaths, rawData, AEDatasetClass, args)
-        rawData.loadLatentVecs()
-    
+    aePipeline = AEPipeline(AutoEncoder, hp, experPaths, rawData, AEDatasetClass, args)
+    rawData.loadLatentVecs()
     modelPipeline = ModelPipeline(Model, hp, experPaths, rawData, DatasetClass, args)
-    hp.predData_Info = f'_'
 
-    modelPipeline.test()
-    if hp.reduce: aePipeline.decodeLatentVecDistributions()
-    # if hp.reduce: aePipeline.decodeLatentVecs()
+    # test 
+    hp.predData_Info = f'_'
+    # modelPipeline.test()
+    # aePipeline.decodeLatentVecs()
 
     # save hyper params for the run
     sv_args = hp
@@ -88,32 +85,37 @@ def results(runName, minValidEpoch):
     # --------------------------------------------------------------------------
     #                  load saved predictions during testing
 
-    loadWeightsEpoch = '_'.join(str(e) for e in hp.loadWeightsEpoch)
-    # loadWeightsEpoch = 7950
     try:
-        if hp.reduce: 
-            name = f'predHDataTest_epoch{loadWeightsEpoch}_.hdf5'
-        else:
-            name = f'predDataTest_epoch{loadWeightsEpoch}_.hdf5'
+        name = f'predHDataTest_epoch{hp.loadWeightsEpoch}_.hdf5'
         predData = h5py.File(join(experPaths.run, name), 'r')
         print(f'loaded pred data {name}')
     except:
         print(f'{join(experPaths.run, name)}')
         raise Exception(FileNotFoundError)
 
+    pred = predData['pred'][:]  # (numSampTest, imDim)
+    target = predData['target'][:]  # (numSampTest, imDim)  
+    loss = LA.norm((pred - target), axis=1) / LA.norm(target, axis=1) *100
+    timeStepsUnroll = hp.numSampTrain +hp.seq_len*2+ np.arange(0, hp.timeStepsUnroll, 10)
+
+    # --------------------------------------------------------------------------
+    #                        image plot for prediction
+
+    savePath = join(experPaths.run, f'MlpAE_CNN_BurRe{hp.Re}_imgPred{0}_epoch{hp.loadWeightsEpoch}')
+    plotParams = {'tStepModelPlot':[2]*hp.numSampTest, 'v_min':hp.dataMin, 'v_max':hp.dataMax}
+    plotData = {'data': pred}
+    Plots().imgPlot(plotData, Dict2Class(plotParams), savePath)
+
+    savePath = join(experPaths.run, f'MlpAE_CNN_BurRe{hp.Re}_imgTar{0}_epoch{hp.loadWeightsEpoch}')
+    plotParams = {'tStepModelPlot':[2]*hp.numSampTest, 'v_min':hp.dataMin, 'v_max':hp.dataMax}
+    plotData = {'data': target}
+    Plots().imgPlot(plotData, Dict2Class(plotParams), savePath)
+    exit()
+
     # --------------------------------------------------------------------------
     #                        l2 relative error plot
 
-    pred = predData['pred'][:]
-    target = predData['target'][:]
-    var = predData['var'][:]
-    var = var**0.5
-    # var = np.zeros_like(pred)
-    loss = LA.norm((pred - target), axis=1) / LA.norm(target, axis=1) *100
-
-    timeStepsUnroll = hp.numSampTrain +hp.seq_len*2+ np.arange(0, hp.timeStepsUnroll, 10)
-
-    savePath = join(experPaths.run, f'CAE_CNNEns_Stok_Error_epoch{loadWeightsEpoch}')
+    savePath = join(experPaths.run, f'MlpAE_CNN_BurRe{hp.Re}_Error_epoch{hp.loadWeightsEpoch}')
     plotParams = {'xlabel':'Time Step', 'ylabel': 'Percentage Error', 
                 'xticks':np.arange(0, hp.timeStepsUnroll, 10), 'yticks':np.arange(300),
                 'xticklabels':timeStepsUnroll, 'yticklabels':np.arange(300),
@@ -125,23 +127,21 @@ def results(runName, minValidEpoch):
     # --------------------------------------------------------------------------
     #                        image plot for prediction
 
-    savePath = join(experPaths.run, f'CAE_CNNEns_Stok_predPlot{0}_epoch{loadWeightsEpoch}')
+    savePath = join(experPaths.run, f'MlpAE_CNN_BurRe{hp.Re}_predPlot{0}_epoch{hp.loadWeightsEpoch}')
     plotParams = {'tStepModelPlot':[2]*hp.numSampTest}
     plotData = {'pred': pred, 'target': target}
-    savePath = join(experPaths.run, f'CAE_CNNEns_Stok_predimPlot{0}_epoch{loadWeightsEpoch}')
+    savePath = join(experPaths.run, f'MlpAE_CNN_BurRe{hp.Re}_predimPlot{0}_epoch{hp.loadWeightsEpoch}')
     Plots().implotPred(plotData, Dict2Class(plotParams), savePath)
 
     # --------------------------------------------------------------------------
     #                        graph plot for prediction
 
-    for timestepplot in [50, 100, 150]:
-        savePath = join(experPaths.run, f'CAE_CNNEns_Stok_predgraphPlot{timestepplot}_epoch{loadWeightsEpoch}')
+    for timestepplot in [20, 40, 60]:
+        savePath = join(experPaths.run, f'MlpAE_CNN_BurRe{hp.Re}_predgraphPlot{timestepplot}_epoch{hp.loadWeightsEpoch}')
         plotParams = {'tStepModelPlot':[2]*hp.numSampTest}
-        plotData = {'pred': pred[hp.numSampTrain+hp.seq_len-1:], 
-                    'target': target[hp.numSampTrain+hp.seq_len-1:],
-                    'var': var[hp.numSampTrain+hp.seq_len-1:]}
+        plotData = {'pred': pred[hp.numSampTrain+hp.seq_len-1:], 'target': target[hp.numSampTrain+hp.seq_len-1:]}
 
-        Plots().plotPredSingleVar(plotData, Dict2Class(plotParams), savePath, timestepplot)
+        Plots().plotPredSingle(plotData, Dict2Class(plotParams), savePath, timestepplot)
 
 
 path = join(experDir, f'minLoss.csv')
@@ -157,14 +157,7 @@ df = df.reset_index()
 # %% ---------------------------------------------------------------------------
 #                           test particular run
 
-name = 'results_CAE_CNNEns_sql20_krs3_lr5e-05_trSmp250_ch100100100_bs15_8PA67'
-minValidEpoch = []
-
-for i in range(10):
-    name1 = name+f'model{i}'
-    minValidEpoch_i = df.loc[df['name'] == name1, 'minValidEpoch'].values[0] 
-    minValidEpoch.append(int(minValidEpoch_i))
-
-results(name, minValidEpoch)
-
-# results('resultsOP_CAE_CNNEns_sql20_krs3_lr5e-05_trSmp250_ch100100100_bs15_8PA67', [2500])
+name = 'results_MlpAE_CNN_ld50_sql10_krs3_lr0.0003_ch100100100_bs15_14JWZ'
+# minValidEpoch = df.loc[df['name'] == name, 'minValidEpoch'].values[0] 
+# results(name, int(minValidEpoch))
+results(name, 3900)

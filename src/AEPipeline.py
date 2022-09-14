@@ -33,6 +33,9 @@ class AEPipeline():
         self.info(self)
         self.info(self.model)
 
+        if hasattr(self.hp, 'minValidAELossEpoch'):
+            self.hp.loadAEWeightsEpoch  = self.hp.minValidAELossEpoch
+ 
 
     def saveModel(self, epoch, optimizer, scheduler, losses):
         PATH = join(self.path.weights, f'AEweights_epoch{epoch}.tar')
@@ -146,6 +149,12 @@ class AEPipeline():
             # ------------------------ print progress --------------------------
             if epoch % hp.logIntervalAE == 0: self.info(f'({epoch}) Training loss: {loss:.8f} Validation loss: {valid_loss:.8f}')
 
+        # set minValidLoss
+        dd = self.hp.checkpointIntervalAE
+        minValidLoss = min(losses['valid'][::dd])        
+        hp.minValidAELossEpoch = losses['valid'].index(minValidLoss)
+        hp.loadAEWeightsEpoch = hp.minValidAELossEpoch
+
     
     def savePredictions(self, predData, epoch, trainBool):
         info = self.hp.predData_Info if hasattr(self.hp, 'predData_Info') else ''
@@ -253,12 +262,9 @@ class AEPipeline():
         self.loadModel(epoch)
         self.model.eval()
 
-        # LatentVecs = []
-        
-        pred = self.model(predLv)
-        target = self.model(targetLv)
+        pred = self.model(predLv[0])
+        target = dataset.rawData.data.T[hp.seq_len:hp.seq_len+hp.timeStepsUnroll]
 
         pred = self.denormalize(pred, self.hp.meanAE, self.hp.stdAE)
-        target = self.denormalize(target, self.hp.meanAE, self.hp.stdAE)
 
         self.saveOutputs(pred, target)

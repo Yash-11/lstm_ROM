@@ -28,13 +28,14 @@ from src.Pipeline import ModelPipeline
 from src.AEPipeline import AEPipeline
 from src.Paths import Paths
 
-from src.Stoker.StokerDataset import DatasetClass
-from src.Stoker.StokerCNNModel import Model
 from src.Stoker.StokerLoadData import LoadData
 from src.Stoker.StokerPlots import Plots
 
 from src.Stoker.StokerAEDataset import AEDatasetClass
 from src.Stoker.StokerAEModel import AutoEncoder
+
+from src.Stoker.StokerDataset import DatasetClass
+from src.Stoker.StokerCNNModel import Model
 
 SEED = 1234
 
@@ -49,16 +50,16 @@ class ParamsManager:
         
         # model 
         self.seq_len = [20, 10]
-        self.num_channels = [[50, 50, 50], [100, 100, 100], [25, 25], [100, 100], [50, 50]]
-        self.kernel_size = [3, 9, 5]
-        self.latentDim = [8, 32, 16, 4, 64]
+        self.num_channels = [[50, 50, 50], [100, 100, 100], [100, 100], [50, 50]] 
+        self.kernel_size = [3]
+        self.latentDim = [25, 50, 125]
         self.dropout = [0]
-        self.AE_Model = [2, 3, 4, 5]
+        self.AE_Model = [4]
 
         # training
-        self.numIters = [1001]
-        self.lr = [2e-4]
-        self.batchSizeTrain = [10]
+        self.numIters = [3001]
+        self.lr = [3e-4]
+        self.batchSizeTrain = [15]
         self.epochStartTrain = [0000]
         self.weight_decay = [1e-5]
 
@@ -84,23 +85,23 @@ class ParamsManager:
 
         # AEtraining
         self.numItersAE = [3001]
-        self.lrAE = [0.0003]
+        self.lrAE = [3e-4]
         self.batchSizeTrainAE = [50]
         self.epochStartTrainAE = [0]
 
         # AEtesting
         self.loadAEWeightsEpoch = [3000]
-        self.batchSizeTestAE = [1]
+        self.batchSizeTestAE = [100]
         self.batchSizeEncode = [500]
 
         # AEdata
         self.numSampTrainAE = [400]
-        self.numSampTestAE = [1]
+        self.numSampTestAE = [100]
         self.numSampValidAE = [100]
 
         # logging
         self.logIntervalAE = [100]
-        self.checkpointIntervalAE = [1000]
+        self.checkpointIntervalAE = [500]
         
         params = self.__dict__
         with open(join(ep.experDir, "AllParams.json"), 'w') as file:
@@ -148,10 +149,11 @@ def HyperParams():
     hp.AE_Model = 4
     
     # training
-    hp.numIters = 2001
-    hp.lr = 2e-4
-    hp.batchSizeTrain = 10
+    hp.numIters = 3001
+    hp.lr = 3e-4
+    hp.batchSizeTrain = 15
     hp.epochStartTrain = 0000
+    hp.weight_decay = 1e-5
 
     # testing
     hp.loadWeightsEpoch = 500
@@ -170,24 +172,24 @@ def HyperParams():
     hp.show = 0
     hp.saveLogs = 1
     hp.saveInterval = 20
-    hp.logInterval = 10
-    hp.checkpointInterval = 100
+    hp.logInterval = 50
+    hp.checkpointInterval = 50
 
     # AEtraining
-    hp.numItersAE = 2001
-    hp.lrAE = 0.0004
+    hp.numItersAE = 3001
+    hp.lrAE = 3e-4
     hp.weight_decay = 1e-4
     hp.batchSizeTrainAE = 50
     hp.epochStartTrainAE = 0
 
     # AEtesting
     hp.loadAEWeightsEpoch = 2000
-    hp.batchSizeTestAE = 1
+    hp.batchSizeTestAE = 100
     hp.batchSizeEncode = 500
 
     # AEdata
     hp.numSampTrainAE = 400
-    hp.numSampTestAE = 1
+    hp.numSampTestAE = 100
     hp.numSampValidAE = 100
 
     # logging
@@ -212,7 +214,7 @@ def addName(hpDict):
         chn+=str(c)
 
     rnd = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
-    runName = f'results_AE_CNNSwap_ld{ld}_sql{sql}_krs{krs}_lr{lr}_trSmp{trs}_ch{chn}_bs{bs}_{rnd}'
+    runName = f'results_MlpAE_CNNSwap_ld{ld}_sql{sql}_krs{krs}_lr{lr}_trSmp{trs}_ch{chn}_bs{bs}_{rnd}'
     hpDict["runName"] = runName
 
 
@@ -223,6 +225,27 @@ def addPaths(ep, runName):
     ep.run = f'{runName}'
 
 
+def resultsAE(hp):
+    
+    try:
+        info = hp.predData_Info if hasattr(hp, 'predData_Info') else ''
+        name = f'predLatentDataTest_epoch{hp.loadAEWeightsEpoch}{info}.hdf5'
+        predData = h5py.File(join(experPaths.run, name), 'r')
+        print(f'loaded pred data {name}')
+    except:
+        print(f'{join(experPaths.run, name)}')
+        raise Exception(FileNotFoundError)
+
+    pred = predData['pred']
+    target = predData['target']
+
+    for i in [0, 30, 50]:
+        savePath = join(experPaths.run, f'StokerAEpredsinglesnapPlot{i}_epoch{hp.loadWeightsEpoch}')
+        plotParams = {'tStepModelPlot':[2]*hp.numSampTest}
+        plotData = {'pred': pred, 'target': target}
+        Plots().plotPredSingleAE(plotData, Dict2Class(plotParams), savePath, i)
+
+
 def automation(hp, experPaths):
     # set hyper params for run
     hp.padding = (hp.kernel_size - 1)//2
@@ -231,6 +254,7 @@ def automation(hp, experPaths):
     addPaths(experPaths, hp.runName)
 
     startSavingLogs(args, experPaths.run, logger)
+    args.info(f'{hp.runName}')
     rawData = LoadData(hp, experPaths, args)
 
     # save hyper params for the run
@@ -240,9 +264,14 @@ def automation(hp, experPaths):
     if hp.reduce:
         aePipeline = AEPipeline(AutoEncoder, hp, experPaths, rawData, AEDatasetClass, args)
         aePipeline.train()
-        # aePipeline.test()
+        aePipeline.test()
+        resultsAE(hp)
         LatentVecs = aePipeline.generateLatentVecs()  # (numSampTrainAE, latentDim)
         rawData.loadLatentVecs()
+
+    # save hyper params for the run
+    sv_args = hp
+    save_args(sv_args, experPaths.run)
     
     # train
     modelPipeline = ModelPipeline(Model, hp, experPaths, rawData, DatasetClass, args)
@@ -257,17 +286,14 @@ experPaths = Paths(experDir, args.os)
 
 # %% ---------------------------------------------------------------------------
 #                   Train all combinations of hyperParams
-# manager = ParamsManager(experPaths)
-# manager.iterateComb(experPaths)
+manager = ParamsManager(experPaths)
+manager.iterateComb(experPaths)
 
 # %% ---------------------------------------------------------------------------
 #                      Train particular hyperParam comb
 
-hp = HyperParams()
-hpDict = hp.__dict__
-addName(hpDict)
-automation(Dict2Class(hpDict), experPaths)
-
-
-
+# hp = HyperParams()
+# hpDict = hp.__dict__
+# addName(hpDict)
+# automation(Dict2Class(hpDict), experPaths)
 

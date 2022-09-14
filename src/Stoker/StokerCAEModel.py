@@ -291,7 +291,7 @@ class AutoEncoder(nn.Module):
                 nn.ConvTranspose1d(8, 1, kernel_size=5, stride=1, padding=2),
             )
 
-    def forward(self, x):
+    def _forward(self, x):
 
         if x.shape[-1] != 1000:
             # x [1, currentBatchSize, latentDim*n_chLatent]
@@ -313,3 +313,22 @@ class AutoEncoder(nn.Module):
             z = self.decoder(y)
             return z[:, 0],y.reshape((n, -1))
 
+    def forward(self, x):
+
+        if x.shape[-1] != 1000:
+            # x [currentBatchSize, latentDim*n_chLatent]
+            x1 = x.reshape((tuple(x.shape[:-1]) + (self.n_chLatent, -1)))
+
+            # x [currentBatchSize, n_chLatent, latentDim]
+            # out [currentBatchSize, 1, imDim]
+            out = self.decoder(x1)
+            out = out[:, 0]
+
+            # out [currentBatchSize, imDim]
+            return out
+        else:
+            # x [currentBatchSize, imDim]
+            n = x.shape[0]
+            y = self.encoder(x[:, None])
+            z = self.decoder(y)
+            return z[:, 0],y.reshape((n, -1))

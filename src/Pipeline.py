@@ -133,11 +133,9 @@ class ModelPipeline():
             df = pd.DataFrame(columns=['name', 'minValidLoss', 'minValidEpoch', 'minTrainLoss', 'minTrainEpoch'])
         
         df = df.append(info, ignore_index=True)
-        # print(df.head)
         df = df.sort_values(by=['minValidLoss'])
         df.to_csv(path, index=False)
 
-    
     
     def train(self):
         hp = self.hp

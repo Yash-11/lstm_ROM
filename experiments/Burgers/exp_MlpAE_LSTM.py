@@ -49,16 +49,16 @@ class ParamsManager:
     def __init__(self, ep):
         
         # model 
-        self.seq_len = [5, 10, 20]
-        self.num_lstm_layers = [1, 2, 3]
-        self.latentDim = [6, 8, 10, 16, 32]
+        self.seq_len = [10, 20]
+        self.num_lstm_layers = [1, 2]
+        self.latentDim = [10, 25, 50]
         self.dropout = [0]
         self.AE_Model = [1]
 
         # training
         self.numIters = [3001]
         self.lr = [3e-4]
-        self.batchSizeTrain = [16]
+        self.batchSizeTrain = [15]
         self.epochStartTrain = [0000]
         self.weight_decay = [1e-5]
 
@@ -101,7 +101,7 @@ class ParamsManager:
 
         # logging
         self.logIntervalAE = [100]
-        self.checkpointIntervalAE = [1000]
+        self.checkpointIntervalAE = [200]
         
         params = self.__dict__
         with open(join(ep.experDir, "AllParams.json"), 'w') as file:

@@ -213,7 +213,7 @@ def addName(hpDict):
         chn+=str(c)
 
     rnd = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
-    runName = f'8results_CAE_CNNSwap_ld{ld}_sql{sql}_krs{krs}_lr{lr}_trSmp{trs}_ch{chn}_bs{bs}_{rnd}'
+    runName = f'results_CAE_CNN_ld{ld}_sql{sql}_krs{krs}_lr{lr}_trSmp{trs}_ch{chn}_bs{bs}_{rnd}'
     hpDict["runName"] = runName
 
 

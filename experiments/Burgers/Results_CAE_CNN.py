@@ -76,8 +76,8 @@ def results(runName, minValidEpoch):
     modelPipeline = ModelPipeline(Model, hp, experPaths, rawData, DatasetClass, args)
     hp.predData_Info = f'_'
 
-    modelPipeline.test()
-    if hp.reduce: aePipeline.decodeLatentVecs()
+    # modelPipeline.test()
+    # if hp.reduce: aePipeline.decodeLatentVecs()
 
     # save hyper params for the run
     sv_args = hp
@@ -98,17 +98,32 @@ def results(runName, minValidEpoch):
         print(f'{join(experPaths.run, name)}')
         raise Exception(FileNotFoundError)
 
+    pred = predData['pred'][:]
+    target = predData['target'][:]
+    
+    loss = LA.norm((pred - target), axis=1) / LA.norm(target, axis=1) *100
+    timeStepsUnroll = hp.numSampTrain +hp.seq_len*2+ np.arange(0, hp.timeStepsUnroll, 10)
+
+    # --------------------------------------------------------------------------
+    #                        image plot for prediction
+
+    savePath = join(experPaths.run, f'CAE_CNN_BurRe{hp.Re}_imgPred{0}_epoch{hp.loadWeightsEpoch}')
+    plotParams = {'tStepModelPlot':[2]*hp.numSampTest, 'v_min':hp.dataMin, 'v_max':hp.dataMax}
+    plotData = {'data': pred}
+    Plots().imgPlot(plotData, Dict2Class(plotParams), savePath)
+
+    savePath = join(experPaths.run, f'CAE_CNN_BurRe{hp.Re}_imgTar{0}_epoch{hp.loadWeightsEpoch}')
+    plotParams = {'tStepModelPlot':[2]*hp.numSampTest, 'v_min':hp.dataMin, 'v_max':hp.dataMax}
+    plotData = {'data': target}
+    Plots().imgPlot(plotData, Dict2Class(plotParams), savePath)
+
+    # savePath = join(experPaths.run, f'CAE_CNN_BurRe{hp.Re}_cbar{0}_epoch{hp.loadWeightsEpoch}')
+    # Plots().cbar({}, Dict2Class(plotParams), savePath)
+
     # --------------------------------------------------------------------------
     #                        l2 relative error plot
 
-    pred = predData['pred'][0]
-    target = predData['target'][0]
-    
-    loss = LA.norm((pred - target), axis=1) / LA.norm(target, axis=1) *100
-
-    timeStepsUnroll = hp.numSampTrain +hp.seq_len*2+ np.arange(0, hp.timeStepsUnroll, 10)
-
-    savePath = join(experPaths.run, f'CAE_CNN_Bur_Error_epoch{hp.loadWeightsEpoch}')
+    savePath = join(experPaths.run, f'CAE_CNN_BurRe{hp.Re}_Error_epoch{hp.loadWeightsEpoch}')
     plotParams = {'xlabel':'Time Step', 'ylabel': 'Percentage Error', 
                 'xticks':np.arange(0, hp.timeStepsUnroll, 10), 'yticks':np.arange(300),
                 'xticklabels':timeStepsUnroll, 'yticklabels':np.arange(300),
@@ -120,20 +135,19 @@ def results(runName, minValidEpoch):
     # --------------------------------------------------------------------------
     #                        image plot for prediction
 
-    savePath = join(experPaths.run, f'CAE_CNN_Bur_predPlot{0}_epoch{hp.loadWeightsEpoch}')
+    savePath = join(experPaths.run, f'CAE_CNN_BurRe{hp.Re}_predPlot{0}_epoch{hp.loadWeightsEpoch}')
     plotParams = {'tStepModelPlot':[2]*hp.numSampTest}
     plotData = {'pred': pred, 'target': target}
-    savePath = join(experPaths.run, f'CAE_CNN_Bur_predimPlot{0}_epoch{hp.loadWeightsEpoch}')
+    savePath = join(experPaths.run, f'CAE_CNN_BurRe{hp.Re}_predimPlot{0}_epoch{hp.loadWeightsEpoch}')
     Plots().implotPred(plotData, Dict2Class(plotParams), savePath)
 
     # --------------------------------------------------------------------------
     #                        graph plot for prediction
 
     for timestepplot in [20, 40, 60]:
-      savePath = join(experPaths.run, f'CAE_CNN_Bur_predgraphPlot{timestepplot}_epoch{hp.loadWeightsEpoch}')
+      savePath = join(experPaths.run, f'CAE_CNN_BurRe{hp.Re}_predgraphPlot{timestepplot}_epoch{hp.loadWeightsEpoch}')
       plotParams = {'tStepModelPlot':[2]*hp.numSampTest}
       plotData = {'pred': pred[hp.numSampTrain+hp.seq_len-1:], 'target': target[hp.numSampTrain+hp.seq_len-1:]}
-      # plotData = {'pred': pred, 'target': target}
   
       Plots().plotPredSingle(plotData, Dict2Class(plotParams), savePath, timestepplot)
 
@@ -151,6 +165,7 @@ df = df.reset_index()
 # %% ---------------------------------------------------------------------------
 #                           test particular run
 
-name = 'results_CAE_CNNEns_Re600_ld50_sql10_krs3_lr5e-05_trSmp150_ch505050_bs15_AE7_8PA67'
-minValidEpoch = df.loc[df['name'] == name, 'minValidEpoch'].values[0] 
-results(name, int(minValidEpoch))
+name = 'results_CAE_CNN_Re300_ld4_sql10_krs3_lr0.0001_trSmp150_ch5050_bs15_8PA67'
+# minValidEpoch = df.loc[df['name'] == name, 'minValidEpoch'].values[0] 
+# results(name, int(minValidEpoch))
+results(name, 2150)

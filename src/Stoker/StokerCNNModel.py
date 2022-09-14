@@ -44,7 +44,6 @@ class Model(nn.Module):
                                      padding=hp.padding, dropout=dropout)]
 
         self.network = nn.Sequential(*layers)
-        # self.linear = nn.Conv1d(output_size, output_size)
         self.conv1d = nn.Conv1d(num_channels[-1], output_size, kernel_size=1)
         # self.linear = nn.Sequential(nn.Linear(num_channels[-1], 32),
         #                             nn.ReLU(),

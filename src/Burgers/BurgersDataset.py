@@ -51,6 +51,8 @@ class DatasetClass(Dataset):
             rawData = self.rawData.data.T  # (timeSteps, imDim)
 
         Dim = rawData.shape[1]
+
+        # if not hasattr(self.hp, 'n_modelEnsemble'):
         rawData, self.max, self.min = self.rescale(rawData, a = -0.5, b = 0.5)
 
         rawDataTrain = rawData[0 : numSampTrain +seq_len]

@@ -264,7 +264,11 @@ def automation(hp, experPaths):
         resultsAE(hp)
         LatentVecs = aePipeline.generateLatentVecs()  # (numSampTrainAE, latentDim)
         rawData.loadLatentVecs()
-    
+
+    # save hyper params for the run
+    sv_args = hp
+    save_args(sv_args, experPaths.run)
+
     # train
     modelPipeline = ModelPipeline(Model, hp, experPaths, rawData, DatasetClass, args)
     modelPipeline.train()

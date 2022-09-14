@@ -98,15 +98,27 @@ def results(runName, minValidEpoch):
         print(f'{join(experPaths.run, name)}')
         raise Exception(FileNotFoundError)
 
+    pred = predData['pred'][:]
+    target = predData['target'][:]    
+    loss = LA.norm((pred - target), axis=1) / LA.norm(target, axis=1) *100
+    timeStepsUnroll = hp.numSampTrain +hp.seq_len*2+ np.arange(0, hp.timeStepsUnroll, 10)
+
+    # --------------------------------------------------------------------------
+    #                        image plot for prediction
+
+    savePath = join(experPaths.run, f'CAE_CNN_BurRe{hp.Re}_imgPred{0}_epoch{hp.loadWeightsEpoch}')
+    plotParams = {'tStepModelPlot':[2]*hp.numSampTest, 'v_min':hp.dataMin, 'v_max':hp.dataMax}
+    plotData = {'data': pred}
+    Plots().imgPlot(plotData, Dict2Class(plotParams), savePath)
+
+    savePath = join(experPaths.run, f'CAE_CNN_BurRe{hp.Re}_imgTar{0}_epoch{hp.loadWeightsEpoch}')
+    plotParams = {'tStepModelPlot':[2]*hp.numSampTest, 'v_min':hp.dataMin, 'v_max':hp.dataMax}
+    plotData = {'data': target}
+    Plots().imgPlot(plotData, Dict2Class(plotParams), savePath)
+    exit()
+
     # --------------------------------------------------------------------------
     #                        l2 relative error plot
-
-    pred = predData['pred'][0]
-    target = predData['target'][0]
-    
-    loss = LA.norm((pred - target), axis=1) / LA.norm(target, axis=1) *100
-
-    timeStepsUnroll = hp.numSampTrain +hp.seq_len*2+ np.arange(0, hp.timeStepsUnroll, 10)
 
     savePath = join(experPaths.run, f'CAE_TCN_Bur_Error_epoch{hp.loadWeightsEpoch}')
     plotParams = {'xlabel':'Time Step', 'ylabel': 'Percentage Error', 
@@ -145,12 +157,13 @@ df = df.reset_index()
 # %% ---------------------------------------------------------------------------
 #                       test all combinations in minLoss.csv
 
-for index, row in df.iterrows():
-    results(row['name'], row['minValidEpoch'])
+# for index, row in df.iterrows():
+#     results(row['name'], row['minValidEpoch'])
 
 # %% ---------------------------------------------------------------------------
 #                           test particular run
 
-# name = 'results_CAE_CNNEns_Re600_ld50_sql10_krs3_lr5e-05_trSmp150_ch505050_bs15_AE7_8PA67'
+name = 'results_CAE_TCN_Re300_ld50_sql10_krs3_lr0.0001_ch646464_bs15_D1PRQ'
 # minValidEpoch = df.loc[df['name'] == name, 'minValidEpoch'].values[0] 
 # results(name, int(minValidEpoch))
+results(name, 3950)

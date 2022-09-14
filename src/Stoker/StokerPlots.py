@@ -235,6 +235,47 @@ class Plots:
 
         self.save_show(1, savePath, fig, bbox_inches='tight', format='png') 
 
+    def imgPlot(self, plotData: Dict, plotParams, savePath: str):
+        """
+        Args:
+
+            plotData (Dict):
+        Vars:
+            pred (ndarray): (numSampTest, timeStepModel, 1, numNodes)
+            target (ndarray): (numSampTest, timeStepModel, 1, numNodes)
+        """
+
+        pp = plotParams
+
+        im = plotData['data'].T
+
+        plt.close("all") 
+        cmap = mpl.cm.get_cmap('plasma')  
+        
+        fig, ax = plt.subplots(1, 1)#, figsize=(7, 6))
+        imParams = {'cmap':cmap, 'v_min':pp.v_min, 'v_max':pp.v_max}
+        self.imshow(im, ax, Dict2Class(imParams))
+        self.save_show(1, savePath, fig, bbox_inches='tight', format='png') 
+
+    def cbar(self, plotData: Dict, plotParams, savePath: str):
+
+        pp = plotParams
+        plt.close("all") 
+        cmap = mpl.cm.get_cmap('plasma')  
+        
+        fig, ax = plt.subplots(1, 1)#, figsize=(7, 6))
+        # --------------------- colorbar image
+        p0 = ax.get_position().get_points().flatten()
+        w = (p0[2]-p0[0])*0.05
+        ax_cbar = fig.add_axes([p0[2]+w, p0[1], w, p0[3]-p0[1]])
+        ticks = np.linspace(0, 1, 5)
+        tickLabels = [f'{t0:02.2f}' for t0 in np.linspace(pp.v_min, pp.v_max, 5)]
+
+        cbar = mpl.colorbar.ColorbarBase(ax_cbar, cmap=plt.get_cmap(cmap), 
+                orientation='vertical', ticks=ticks)
+        cbar.set_ticklabels(tickLabels)
+        self.save_show(1, savePath, fig, bbox_inches='tight', format='png') 
+
 
     def plotPredSingleAE(self, plotData: Dict, plotParams, savePath: str, timestep):
         """

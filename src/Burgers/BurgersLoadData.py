@@ -56,6 +56,9 @@ class LoadData:
         self.hp.imDim = self.data.shape[0]
         self.hp.maxNumTimeSteps = self.data.shape[1]
 
+        self.hp.dataMin = self.data.min().item()
+        self.hp.dataMax = self.data.max().item()
+
     def loadLatentVecs(self):
         path = join(self.experPaths.run, 'LatentVecs.npy')
         self.LatentVecs = T.tensor(np.load(path), dtype=T.float32) 

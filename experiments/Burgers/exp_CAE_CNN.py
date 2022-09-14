@@ -151,8 +151,8 @@ def HyperParams():
     
     # training
     hp.numIters = 3001
-    hp.lr = 3e-4
-    hp.batchSizeTrain = 16
+    hp.lr = 1e-4
+    hp.batchSizeTrain = 15
     hp.epochStartTrain = 0000
     hp.weight_decay = 1e-5
 
@@ -167,14 +167,14 @@ def HyperParams():
     hp.numSampValid = 50
     hp.numSampTest = 1
     hp.reduce = True
-    hp.Re = 600
+    hp.Re = 300
 
     # logging
     hp.save = 1
     hp.show = 0
     hp.saveLogs = 1
     hp.saveInterval = 20
-    hp.logInterval = 10
+    hp.logInterval = 50
     hp.checkpointInterval = 50
 
     # AEtraining
@@ -216,7 +216,7 @@ def addName(hpDict):
         chn+=str(c)
 
     rnd = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
-    runName = f'silu_results_AE_CNNSwap_Re{Re}_ld{ld}_sql{sql}_krs{krs}_lr{lr}_trSmp{trs}_ch{chn}_bs{bs}_{rnd}'
+    runName = f'results_CAE_CNN_Re{Re}_ld{ld}_sql{sql}_krs{krs}_lr{lr}_trSmp{trs}_ch{chn}_bs{bs}_{rnd}'
     hpDict["runName"] = runName
 
 

@@ -76,8 +76,8 @@ def results(runName, minValidEpoch):
     modelPipeline = ModelPipeline(Model, hp, experPaths, rawData, DatasetClass, args)
     hp.predData_Info = f'_'
 
-    modelPipeline.test()
-    if hp.reduce: aePipeline.decodeLatentVecs()
+    # modelPipeline.test()
+    # if hp.reduce: aePipeline.decodeLatentVecs()
 
     # save hyper params for the run
     sv_args = hp
@@ -98,14 +98,27 @@ def results(runName, minValidEpoch):
         print(f'{join(experPaths.run, name)}')
         raise Exception(FileNotFoundError)
 
-    # --------------------------------------------------------------------------
-    #                        l2 relative error plot
-
     pred = predData['pred'][0]
     target = predData['target'][0]
     loss = LA.norm((pred - target), axis=1) / LA.norm(target, axis=1) *100
-
     timeStepsUnroll = hp.numSampTrain +hp.seq_len*2+ np.arange(0, hp.timeStepsUnroll, 10)
+
+    # --------------------------------------------------------------------------
+    #                        image plot for prediction
+
+    savePath = join(experPaths.run, f'CAE_TCN_Stok_imgPred{0}_epoch{hp.loadWeightsEpoch}')
+    plotParams = {'tStepModelPlot':[2]*hp.numSampTest, 'v_min':hp.dataMin, 'v_max':hp.dataMax}
+    plotData = {'data': pred}
+    Plots().imgPlot(plotData, Dict2Class(plotParams), savePath)
+
+    savePath = join(experPaths.run, f'CAE_TCN_Stok_imgTar{0}_epoch{hp.loadWeightsEpoch}')
+    plotParams = {'tStepModelPlot':[2]*hp.numSampTest, 'v_min':hp.dataMin, 'v_max':hp.dataMax}
+    plotData = {'data': target}
+    Plots().imgPlot(plotData, Dict2Class(plotParams), savePath)
+    exit()
+    
+    # --------------------------------------------------------------------------
+    #                        l2 relative error plot
 
     savePath = join(experPaths.run, f'CAE_TCN_Stok_Error_epoch{hp.loadWeightsEpoch}')
     plotParams = {'xlabel':'Time Step', 'ylabel': 'Percentage Error', 
@@ -144,12 +157,13 @@ df = df.reset_index()
 # %% ---------------------------------------------------------------------------
 #                       test all combinations in minLoss.csv
 
-for index, row in df.iterrows():
-    results(row['name'], row['minValidEpoch'])
+# for index, row in df.iterrows():
+#     results(row['name'], row['minValidEpoch'])
 
 # %% ---------------------------------------------------------------------------
 #                           test particular run
 
-# name = 'results_CAE_CNNEns_Re600_ld50_sql10_krs3_lr5e-05_trSmp150_ch505050_bs15_AE7_8PA67'
+name = 'results_CAE_TCN_ld125_sql20_krs3_lr0.0003_ch200200200_bs15_QJP0S'
 # minValidEpoch = df.loc[df['name'] == name, 'minValidEpoch'].values[0] 
 # results(name, int(minValidEpoch))
+results(name, 1050)

@@ -25,7 +25,7 @@ sys.path.append(projectDir)
 
 from src.Utils import Arguments, Dict2Class, startSavingLogs, save_args
 from src.EnsemblePipeline import ModelPipeline
-from src.AEPipeline import AEPipeline
+from src.AEPipelineEnsemble import AEPipeline
 from src.Paths import Paths
 
 from src.Stoker.StokerLoadData import LoadData
@@ -55,13 +55,15 @@ class ParamsManager:
         self.latentDim = [125]
         self.dropout = [0]
         self.AE_Model = [7]
+        self.n_modelEnsemble = [10]
+        self.epsilonLatentVar = [1e-7]
 
         # training
-        self.numIters = [8001]
-        self.lr = [5e-5, 1e-5, 5e-6]#, 1e-4, 1e-5, 1e-6]
-        self.batchSizeTrain = [16]
+        self.numIters = [3002]
+        self.lr = [5e-5]#, 5e-5, 1e-4]#, 1e-4, 1e-5, 1e-6]
+        self.batchSizeTrain = [15]
         self.epochStartTrain = [0000]
-        self.weight_decay = [1e-5]
+        self.weight_decay = [5e-5]
 
         # testing
         self.loadWeightsEpoch = [500]
@@ -80,19 +82,20 @@ class ParamsManager:
         self.show = [0]
         self.saveLogs = [1]
         self.saveInterval = [20]
-        self.logInterval = [10]
+        self.logInterval = [50]
         self.checkpointInterval = [50]
 
         # AEtraining
-        self.numItersAE = [3001]
-        self.lrAE = [0.0003]
+        self.numItersAE = [3002]
+        self.lrAE = [0.0002]
         self.batchSizeTrainAE = [50]
         self.epochStartTrainAE = [0]
 
         # AEtesting
-        self.loadAEWeightsEpoch = [3000]
+        self.loadAEWeightsEpoch = [2500]
         self.batchSizeTestAE = [100]
         self.batchSizeEncode = [500]
+        self.sampling = ['unscented_transform']
 
         # AEdata
         self.numSampTrainAE = [400]
@@ -101,7 +104,7 @@ class ParamsManager:
 
         # logging
         self.logIntervalAE = [100]
-        self.checkpointIntervalAE = [1000]
+        self.checkpointIntervalAE = [100]
         
         params = self.__dict__
         with open(join(ep.experDir, "AllParams.json"), 'w') as file:
@@ -147,10 +150,11 @@ def HyperParams():
     hp.latentDim = 125
     hp.dropout = 0
     hp.AE_Model = 7
-    hp.n_modelEnsemble = 10
+    hp.n_modelEnsemble = 15
+    hp.epsilonLatentVar = 1e-7
 
     # training
-    hp.numIters = 3002
+    hp.numIters = 8002
     hp.lr = 5e-6
     hp.batchSizeTrain = 16
     hp.epochStartTrain = 0000
@@ -173,11 +177,11 @@ def HyperParams():
     hp.show = 0
     hp.saveLogs = 1
     hp.saveInterval = 20
-    hp.logInterval = 10
+    hp.logInterval = 50
     hp.checkpointInterval = 50
 
     # AEtraining
-    hp.numItersAE = 3001
+    hp.numItersAE = 4002
     hp.lrAE = 0.0003
     hp.batchSizeTrainAE = 50
     hp.epochStartTrainAE = 0
@@ -186,6 +190,7 @@ def HyperParams():
     hp.loadAEWeightsEpoch = 3000
     hp.batchSizeTestAE = 100
     hp.batchSizeEncode = 500
+    hp.sampling = 'unscented_transform'
 
     # AEdata
     hp.numSampTrainAE = 400
@@ -194,7 +199,7 @@ def HyperParams():
 
     # logging
     hp.logIntervalAE = 100
-    hp.checkpointIntervalAE = 1000
+    hp.checkpointIntervalAE = 100
     return hp
 
 
@@ -263,11 +268,15 @@ def automation(hp, experPaths):
     
     if hp.reduce:
         aePipeline = AEPipeline(AutoEncoder, hp, experPaths, rawData, AEDatasetClass, args)
-        aePipeline.train()
+        # aePipeline.train()
         aePipeline.test()
         resultsAE(hp)
         LatentVecs = aePipeline.generateLatentVecs()  # (numSampTrainAE, latentDim)
         rawData.loadLatentVecs()
+
+    # save hyper params for the run
+    sv_args = hp
+    save_args(sv_args, experPaths.run)
     
     # train
     modelPipeline = ModelPipeline(Model, hp, experPaths, rawData, DatasetClass, args)
@@ -282,16 +291,16 @@ experPaths = Paths(experDir, args.os)
 
 # %% ---------------------------------------------------------------------------
 #                   Train all combinations of hyperParams
-# manager = ParamsManager(experPaths)
-# manager.iterateComb(experPaths)
+manager = ParamsManager(experPaths)
+manager.iterateComb(experPaths)
 
 # %% ---------------------------------------------------------------------------
 #                      Train particular hyperParam comb
 
-hp = HyperParams()
-hpDict = hp.__dict__
-addName(hpDict)
-automation(Dict2Class(hpDict), experPaths)
+# hp = HyperParams()
+# hpDict = hp.__dict__
+# addName(hpDict)
+# automation(Dict2Class(hpDict), experPaths)
 
 
 

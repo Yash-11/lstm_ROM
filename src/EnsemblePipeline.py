@@ -2,7 +2,6 @@
 class for model training and testing 
 """
 
-import enum
 from genericpath import exists
 
 from turtle import pd
@@ -202,24 +201,19 @@ class ModelPipeline():
         
         self.saveMinLoss(model_idx, losses)
 
-    
+
     def savePredictions(self, predData, epoch, trainBool):
         info = self.hp.predData_Info if hasattr(self.hp, 'predData_Info') else ''
         predData_Path = join(self.path.run, f'predDataTest_epoch{epoch}{info}.hdf5')
 
-        predArray, targetArray, varArray = predData
+        predArray, targetArray, varArray, rescaleMinMax = predData
 
         with h5py.File(predData_Path, 'w') as f:
             f.create_dataset('pred', data=predArray.detach().cpu().numpy())
             f.create_dataset('target', data=targetArray.detach().cpu().numpy())
             f.create_dataset('var', data=varArray.detach().cpu().numpy())
+            f.create_dataset('rescaleMinMax', data=rescaleMinMax)
         print(f'pred data saved at {predData_Path}')
-    
-
-    def rescale(self, x, max, min):
-        a = -0.5; b = 0.5
-        x = (x-a)*(max- min)/(b-a)+min
-        return x
     
     
     def test(self):
@@ -230,6 +224,7 @@ class ModelPipeline():
 
         # ------------------------ Load saved weights --------------------------
         for model_idx, epoch_i in enumerate(hp.loadWeightsEpoch):
+            print(model_idx)
             self.loadModel(model_idx, epoch_i)
             self.models[model_idx].eval()
 
@@ -248,14 +243,17 @@ class ModelPipeline():
                 pred_i = 0
                 var_i = 0
 
-                for model_idx, model in enumerate(self.models):
+                for model_idx, model in enumerate(self.models[:]):
                     mean_ij, var_ij = model(last_N_seqsMu)  # (currentBatchSize, latentDim)
 
-                    pred_i = pred_i + mean_ij
-                    var_i = var_i + var_ij + mean_ij**2
+                    pred_i = pred_i + mean_ij /hp.n_modelEnsemble
+                    var_i = var_i + (var_ij+mean_ij**2)  /hp.n_modelEnsemble
 
-                pred_i = pred_i/hp.n_modelEnsemble
-                var_i = var_i/hp.n_modelEnsemble - pred_i**2
+                var_i = var_i - pred_i**2
+                if not T.all(var_i > 0):
+                    var_i += hp.epsilonLatentVar
+
+                # pred_i, var_i = self.models[0](last_N_seqsMu)  # (currentBatchSize, latentDim)
                 
                 last_N_seqsMu = T.cat((last_N_seqsMu[:, 1:], pred_i[:, None]), dim=1)
 
@@ -267,14 +265,11 @@ class ModelPipeline():
                     var = var_i[:, None]
                     flag = 1
 
-            pred = self.rescale(pred, test_dataset.max, test_dataset.min)
-            target = self.rescale(target, test_dataset.max, test_dataset.min)
-
             predMuLs.append(pred)
             predVarLs.append(var)
             dataLs.append(target)
         
-        predData = T.cat(predMuLs, dim=0), T.cat(dataLs, dim=0), T.cat(predVarLs, dim=0)  # (numSampTest, timeStepModel, M, numNodes)
+        predData = T.cat(predMuLs, dim=0), T.cat(dataLs, dim=0), T.cat(predVarLs, dim=0), np.array([test_dataset.max, test_dataset.min])  # (numSampTest, timeStepModel, M, numNodes)
 
         self.savePredictions(predData, '_'.join(str(e) for e in hp.loadWeightsEpoch), False) 
         return predData[0][0].detach().cpu().numpy()

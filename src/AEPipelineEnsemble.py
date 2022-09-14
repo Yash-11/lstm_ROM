@@ -36,6 +36,9 @@ class AEPipeline():
         self.info(self)
         self.info(self.model)
 
+        if hasattr(self.hp, 'minValidAELossEpoch'):
+            self.hp.loadAEWeightsEpoch  = self.hp.minValidAELossEpoch
+
 
     def saveModel(self, epoch, optimizer, scheduler, losses):
         PATH = join(self.path.weights, f'AEweights_epoch{epoch}.tar')
@@ -149,6 +152,12 @@ class AEPipeline():
             # ------------------------ print progress --------------------------
             if epoch % hp.logIntervalAE == 0: self.info(f'({epoch}) Training loss: {loss:.8f} Validation loss: {valid_loss:.8f}')
 
+        # set minValidLoss
+        dd = self.hp.checkpointIntervalAE
+        minValidLoss = min(losses['valid'][::dd])        
+        hp.minValidAELossEpoch = losses['valid'].index(minValidLoss)
+        hp.loadAEWeightsEpoch = hp.minValidAELossEpoch
+
     
     def savePredictions(self, predData, epoch, trainBool):
         info = self.hp.predData_Info if hasattr(self.hp, 'predData_Info') else ''
@@ -248,15 +257,13 @@ class AEPipeline():
         name = f'predDataTest_epoch{hp.loadWeightsEpoch}{info}.hdf5'
         predData = h5py.File(join(self.path.run, name), 'r')
 
-        predLv = T.tensor( predData['pred'][:], dtype=T.float32).to(self.args.device) 
-        targetLv = T.tensor( predData['target'][:], dtype=T.float32).to(self.args.device) 
+        predLv = T.tensor( predData['pred'][0], dtype=T.float32).to(self.args.device) 
+        targetLv = T.tensor( predData['target'][0], dtype=T.float32).to(self.args.device) 
 
         # ------------------------ Load saved weights --------------------------
         epoch = hp.loadAEWeightsEpoch
         self.loadModel(epoch)
         self.model.eval()
-
-        # LatentVecs = []
         
         pred = self.model(predLv)
         target = self.model(targetLv)
@@ -291,54 +298,77 @@ class AEPipeline():
 
         mean = predData['pred'][0]  # [n_sampTest, N]
         var0 = predData['var'][0]  # [n_sampTest, N]
+        _min = predData['rescaleMinMax'][0]
+        _max = predData['rescaleMinMax'][1]
 
+        def rescale(x, max, min):
+            a = -0.5; b = 0.5
+            x = (x-a)*(max- min)/(b-a)+min
+            return x
+
+        hp.sampling == 'mean_only'
         # ----------------------------------------------------------------------
         #                           Monte Carlo
-        # hp.n_MC_Samp = 100        
-        # points = T.zeros((n_sampTest, hp.n_MC_Samp, N))
 
-        # for i in range(n_sampTest):
-        #     cov = np.diag(var0[i])  # [N, N]
-        #     pts = np.random.multivariate_normal(mean[i], cov, size=hp.n_MC_Samp)  # [n_MC_Samp, N]
-        #     points[i] = T.tensor(pts, dtype=T.float32)
+        if hp.sampling == 'monte_carlo':
+            hp.n_MC_Samp = 500        
+            points = T.zeros((n_sampTest, hp.n_MC_Samp, N))
+
+            for i in range(n_sampTest):
+                cov = np.diag(var0[i])  # [N, N]
+                pts = np.random.multivariate_normal(mean[i], cov, size=hp.n_MC_Samp)  # [n_MC_Samp, N]
+                points[i] = T.tensor(pts, dtype=T.float32)
+                
+            points = points.to(self.args.device) 
+
             
-        # points = points.to(self.args.device) 
+            ptsN = self.model(T.reshape(points, (n_sampTest*hp.n_MC_Samp, N)))  # [n_sampTest*n_MC_Samp, M]
+            ptsN = self.denormalize(ptsN, self.hp.meanAE, self.hp.stdAE)
+            ptsN = T.reshape(ptsN, (n_sampTest, hp.n_MC_Samp, M))
+            ptsN = ptsN.detach().cpu().numpy()
 
-        
-        # ptsN = self.model(T.reshape(points, (n_sampTest*hp.n_MC_Samp, N)))  # [n_sampTest*n_MC_Samp, M]
-        # ptsN = T.reshape(ptsN, (n_sampTest, hp.n_MC_Samp, M))
-        # ptsN = ptsN.detach().cpu().numpy()
-
-        # meanMC = ptsN.mean(axis=1)
-        # varMC = ptsN.var(axis=1)
-        # # covN = np.cov(ptsN.T)
+            meanOut = ptsN.mean(axis=1)
+            varOut = ptsN.var(axis=1)
+            # covN = np.cov(ptsN.T)
         
         # ----------------------------------------------------------------------
         #                         Unscented Transform
 
-        meanUT = np.zeros((n_sampTest, M))
-        varUT = np.zeros((n_sampTest, M))
+        if hp.sampling == 'unscented_transform':
+            meanUT = np.zeros((n_sampTest, M))
+            varUT = np.zeros((n_sampTest, M))
+            
+            sp = JulierSigmaPoints(n=N, kappa=.2)
+            Wm, Wc = sp.Wm, sp.Wc
+
+            for i in range(n_sampTest):
         
-        sp = JulierSigmaPoints(n=N, kappa=.2)
-        Wm, Wc = sp.Wm, sp.Wc
+                x = mean[i][None]
+                P = np.diag(var0[i])  # [N, N]
 
-        for i in range(n_sampTest):
-    
-            x = mean[i][None]
-            P = np.diag(var0[i])  # [N, N]
+                try:
+                    Xi = sp.sigma_points(x, P)  # [n_UT_Samp, N]
+                except:
+                    breakpoint()
+                Xi = T.tensor(Xi, dtype=T.float32).to(self.args.device)
+                Yi = rescale(Xi, _min, _max)
+                Yi = self.model(Yi)  # [n_UT_Samp, M]
+                Yi = self.denormalize(Yi, self.hp.meanAE, self.hp.stdAE)
+                Yi = Yi.detach().cpu().numpy()
 
-            Xi = sp.sigma_points(x, P)  # [n_UT_Samp, N]
-            Xi = T.tensor(Xi, dtype=T.float32).to(self.args.device)
-            Yi = self.model(Xi)  # [n_UT_Samp, M]
-            Yi = self.denormalize(Yi, self.hp.meanAE, self.hp.stdAE)
-            Yi = Yi.detach().cpu().numpy()
+                # xm [200,] ucov [200, 200]
+                xm, ucov = unscented_transform(Yi, Wm, Wc, 0)
 
-            # xm [200,] ucov [200, 200]
-            xm, ucov = unscented_transform(Yi, Wm, Wc, 0)
+                meanUT[i] = xm
+                varUT[i] = np.diag(ucov)
 
-            meanUT[i] = xm
-            varUT[i] = np.diag(ucov)
+            meanOut = meanUT
+            varOut = varUT
 
+        if hp.sampling == 'mean_only':
+            meanOut = self.model(rescale(predLv[0], _min, _max)).detach().cpu().numpy()
+            meanOut = self.denormalize(meanOut, self.hp.meanAE, self.hp.stdAE)
+            varOut = np.zeros_like(meanOut)
         
         # w = 8
         # plt.figure()
@@ -355,15 +385,14 @@ class AEPipeline():
         # plt.savefig('var.png')
         # plt.close()
 
-
+        
         target = dataset.rawData.data.T[hp.seq_len:hp.seq_len+hp.timeStepsUnroll]
-        target = self.denormalize(target, self.hp.meanAE, self.hp.stdAE)
 
         info = self.hp.predData_Info if hasattr(self.hp, 'predData_Info') else ''
         predData_Path = join(self.path.run, f'predHDataTest_epoch{loadWeightsEpoch}{info}.hdf5')
 
         with h5py.File(predData_Path, 'w') as f:
-            f.create_dataset('pred', data=meanUT)
+            f.create_dataset('pred', data=meanOut)
             f.create_dataset('target', data=target.numpy())
-            f.create_dataset('var', data=varUT)
+            f.create_dataset('var', data=varOut)
         print(f'pred data saved at {predData_Path}')

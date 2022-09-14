@@ -28,13 +28,14 @@ from src.Pipeline import ModelPipeline
 from src.AEPipeline import AEPipeline
 from src.Paths import Paths
 
-from src.Burgers.BurgersDataset import DatasetClass
-from src.Burgers.BurgersCNNModel import Model
 from src.Burgers.BurgersLoadData import LoadData
 from src.Burgers.BurgersPlots import Plots
 
 from src.Burgers.BurgersAEDataset import AEDatasetClass
 from src.Burgers.BurgersAEModel import AutoEncoder
+
+from src.Burgers.BurgersDataset import DatasetClass
+from src.Burgers.BurgersCNNModel import Model
 
 SEED = 1234
 
@@ -48,17 +49,17 @@ class ParamsManager:
     def __init__(self, ep):
         
         # model 
-        self.seq_len = [10]
-        self.num_channels = [[50, 50, 50], [200, 200], [25, 25, 25]]
-        self.kernel_size = [3, 5]
-        self.latentDim = [4, 8, 16, 32, 64]
+        self.seq_len = [10, 20]
+        self.num_channels = [[50, 50, 50], [200, 200], [100, 100, 100]]
+        self.kernel_size = [3]
+        self.latentDim = [10, 25, 50]
         self.dropout = [0]
         self.AE_Model = [1]
 
         # training
         self.numIters = [4001]
         self.lr = [3e-4]
-        self.batchSizeTrain = [16]
+        self.batchSizeTrain = [15]
         self.epochStartTrain = [0000]
         self.weight_decay = [1e-5]
 
@@ -80,7 +81,7 @@ class ParamsManager:
         self.show = [0]
         self.saveLogs = [1]
         self.saveInterval = [20]
-        self.logInterval = [10]
+        self.logInterval = [50]
         self.checkpointInterval = [50]
 
         # AEtraining
@@ -91,17 +92,17 @@ class ParamsManager:
 
         # AEtesting
         self.loadAEWeightsEpoch = [3000]
-        self.batchSizeTestAE = [1]
+        self.batchSizeTestAE = [50]
         self.batchSizeEncode = [250]
 
         # AEdata
         self.numSampTrainAE = [200]
-        self.numSampTestAE = [1]
+        self.numSampTestAE = [50]
         self.numSampValidAE = [50]
 
         # logging
         self.logIntervalAE = [100]
-        self.checkpointIntervalAE = [1000]
+        self.checkpointIntervalAE = [200]
         
         params = self.__dict__
         with open(join(ep.experDir, "AllParams.json"), 'w') as file:
@@ -241,7 +242,7 @@ def automation(hp, experPaths):
     if hp.reduce:
         aePipeline = AEPipeline(AutoEncoder, hp, experPaths, rawData, AEDatasetClass, args)
         aePipeline.train()
-        # aePipeline.test()
+        aePipeline.test()
         LatentVecs = aePipeline.generateLatentVecs()  # (numSampTrainAE, latentDim)
         rawData.loadLatentVecs()
     
@@ -264,10 +265,10 @@ manager.iterateComb(experPaths)
 # %% ---------------------------------------------------------------------------
 #                      Train particular hyperParam comb
 
-hp = HyperParams()
-hpDict = hp.__dict__
-addName(hpDict)
-automation(Dict2Class(hpDict), experPaths)
+# hp = HyperParams()
+# hpDict = hp.__dict__
+# addName(hpDict)
+# automation(Dict2Class(hpDict), experPaths)
 
 
 

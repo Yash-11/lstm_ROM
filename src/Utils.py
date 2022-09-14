@@ -78,8 +78,8 @@ class Arguments:
         elif sys.platform == "win32": operating_sys = 'Windows'
         else: raise Exception('os not supported')
 
-        self.device = T.device('cuda:' + str(0) if T.cuda.is_available() else 'cpu')
-        # self.device = 'cpu'
+        # self.device = T.device('cuda:' + str(0) if T.cuda.is_available() else 'cpu')
+        self.device = 'cpu'
         self.os = operating_sys
         self.seed = 0
         self.save_logs = True

@@ -1,6 +1,6 @@
 
 
-# %% ---------------------------------------------------------------------------
+#%%
 
 
 import logging
@@ -28,14 +28,15 @@ from src.Pipeline import ModelPipeline
 from src.AEPipeline import AEPipeline
 from src.Paths import Paths
 
-from src.Burgers.BurgersLoadData import LoadData
-from src.Burgers.BurgersPlots import Plots
+from src.Stoker.StokerLoadData import LoadData
+from src.Stoker.StokerPlots import Plots
 
-from src.Burgers.BurgersAEDataset import AEDatasetClass
-from src.Burgers.BurgersAEModel import AutoEncoder
+from src.Stoker.StokerAEDataset import AEDatasetClass
+from src.Stoker.StokerAEModel import AutoEncoder
 
-from src.Burgers.BurgersDataset import DatasetClass
-from src.Burgers.BurgersTCNModel import Model
+from src.Stoker.StokerDataset import DatasetClass
+from src.Stoker.StokerTCNModel import Model
+
 
 SEED = 1234
 
@@ -47,14 +48,14 @@ T.backends.cudnn.deterministic = True
 class ParamsManager:
 
     def __init__(self, ep):
-        
-        # model
+
+        # model 
         self.seq_len = [10, 20]
-        self.latentDim = [10, 25, 50]
-        self.num_channels = [[100, 100], [64, 64], [32, 32]]
+        self.latentDim = [25, 50, 125]
+        self.num_channels = [[200, 200], [64, 64], [32, 32]]
         self.kernel_size = [3]
         self.dropout = [0]
-        self.AE_Model = [1]
+        self.AE_Model = [4]
 
         # training
         self.numIters = [3001]
@@ -64,25 +65,24 @@ class ParamsManager:
         self.weight_decay = [1e-5]
 
         # testing
-        self.loadWeightsEpoch = [1]
+        self.loadWeightsEpoch = [0]
         self.batchSizeTest = [1]
-        self.timeStepsUnroll = [230]
+        self.timeStepsUnroll = [450]
 
         # data
-        self.numSampData = [250]
-        self.numSampTrain = [150]
-        self.numSampValid = [50]
+        self.numSampData = [500]
+        self.numSampTrain = [250]
+        self.numSampValid = [100]
         self.numSampTest = [1]
         self.reduce = [True]
-        self.Re = [300, 600]
 
         # logging
         self.save = [1]
         self.show = [0]
         self.saveLogs = [1]
         self.saveInterval = [20]
-        self.logInterval = [50]
-        self.checkpointInterval = [50]
+        self.logInterval = [100]
+        self.checkpointInterval = [100]
 
         # AEtraining
         self.numItersAE = [3001]
@@ -92,17 +92,17 @@ class ParamsManager:
 
         # AEtesting
         self.loadAEWeightsEpoch = [3000]
-        self.batchSizeTestAE = [50]
-        self.batchSizeEncode = [250]
+        self.batchSizeTestAE = [100]
+        self.batchSizeEncode = [500]
 
         # AEdata
-        self.numSampTrainAE = [200]
-        self.numSampTestAE = [50]
-        self.numSampValidAE = [50]
+        self.numSampTrainAE = [400]
+        self.numSampTestAE = [100]
+        self.numSampValidAE = [100]
 
         # logging
         self.logIntervalAE = [100]
-        self.checkpointIntervalAE = [200]
+        self.checkpointIntervalAE = [500]
         
         params = self.__dict__
         with open(join(ep.experDir, "AllParams.json"), 'w') as file:
@@ -141,48 +141,32 @@ def HyperParams():
     class HyperParams: pass
     hp = HyperParams()
 
-    # model
-        # self.seq_len = [5, 10, 13]
-        # self.num_channels = [[200, 200], [64, 64], [32, 32], [16, 16]]
-        # self.latentDim = [6, 8, 10, 16, 32]
-        # self.kernel_size = [3]
-        # self.dropout = [0]
-        # self.AE_Model = [1]
-
-    # model Re 300
-    # hp.seq_len = 5
-    # hp.num_channels = [16, 16]
-    # hp.latentDim = 6
-    # hp.kernel_size = 3
-    # hp.dropout = 0
-    # hp.AE_Model = 1
-
-    # model Re 600
-    hp.seq_len = 13
-    hp.num_channels = [32, 32]
-    hp.latentDim = 6
+    # model 
+    hp.seq_len = 20
+    hp.num_channels = [25, 25]
     hp.kernel_size = 3
+    hp.latentDim = 32
     hp.dropout = 0
-    hp.AE_Model = 1
+    hp.AE_Model = 4
     
     # training
     hp.numIters = 3001
     hp.lr = 3e-4
     hp.batchSizeTrain = 15
     hp.epochStartTrain = 0000
+    hp.weight_decay = 1e-5
 
     # testing
-    hp.loadWeightsEpoch = 00
+    hp.loadWeightsEpoch = 500
     hp.batchSizeTest = 1
-    hp.timeStepsUnroll = 230
+    hp.timeStepsUnroll = 450
 
     # data
-    hp.numSampData = 250
-    hp.numSampTrain = 150
-    hp.numSampValid = 50
+    hp.numSampData = 500
+    hp.numSampTrain = 250
+    hp.numSampValid = 100
     hp.numSampTest = 1
     hp.reduce = True
-    hp.Re = 600
 
     # logging
     hp.save = 1
@@ -194,19 +178,20 @@ def HyperParams():
 
     # AEtraining
     hp.numItersAE = 3001
-    hp.lrAE = 0.0003
+    hp.lrAE = 3e-4
+    hp.weight_decay = 1e-4
     hp.batchSizeTrainAE = 50
     hp.epochStartTrainAE = 0
 
     # AEtesting
-    hp.loadAEWeightsEpoch = 3000
-    hp.batchSizeTestAE = 50
-    hp.batchSizeEncode = 250
+    hp.loadAEWeightsEpoch = 2000
+    hp.batchSizeTestAE = 100
+    hp.batchSizeEncode = 500
 
     # AEdata
-    hp.numSampTrainAE = 200
-    hp.numSampTestAE = 50
-    hp.numSampValidAE = 50
+    hp.numSampTrainAE = 400
+    hp.numSampTestAE = 100
+    hp.numSampValidAE = 100
 
     # logging
     hp.logIntervalAE = 100
@@ -217,8 +202,7 @@ def HyperParams():
 def addName(hpDict):
     """
     Give name to particular hyperparam combination.
-    """    
-    Re = hpDict['Re']
+    """
     ld = hpDict['latentDim']
     sql = hpDict['seq_len']
     lr = hpDict['lr']
@@ -231,14 +215,14 @@ def addName(hpDict):
         chn+=str(c)
 
     rnd = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
-    runName = f'results_MlpAE_TCN_Re{Re}_ld{ld}_sql{sql}_krs{krs}_lr{lr}_ch{chn}_bs{bs}_{rnd}'
+    runName = f'results_MlpAE_TCN_ld{ld}_sql{sql}_krs{krs}_lr{lr}_ch{chn}_bs{bs}_{rnd}'
     hpDict["runName"] = runName
 
 
 def addPaths(ep, runName):
     ep.weights = f'{runName}/checkpoints'
     ep.data = f'./data'
-    ep.code = f'../../src/BurgersTCN'
+    ep.code = f'../../src/StokerTCN'
     ep.run = f'{runName}'
 
 
@@ -256,13 +240,11 @@ def resultsAE(hp):
     pred = predData['pred']
     target = predData['target']
 
-    for i in [0, 15, 30]:
-        savePath = join(experPaths.run, f'BurgersAEpredsinglesnapPlot{i}_epoch{hp.loadWeightsEpoch}')
+    for i in [0, 30, 50]:
+        savePath = join(experPaths.run, f'StokerAEpredsinglesnapPlot{i}_epoch{hp.loadWeightsEpoch}')
         plotParams = {'tStepModelPlot':[2]*hp.numSampTest}
         plotData = {'pred': pred, 'target': target}
         Plots().plotPredSingleAE(plotData, Dict2Class(plotParams), savePath, i)
-
-
 
 def automation(hp, experPaths):
 
@@ -276,7 +258,7 @@ def automation(hp, experPaths):
     # save hyper params for the run
     sv_args = hp
     save_args(sv_args, experPaths.run)
-    
+
     if hp.reduce:
         aePipeline = AEPipeline(AutoEncoder, hp, experPaths, rawData, AEDatasetClass, args)
         aePipeline.train()
