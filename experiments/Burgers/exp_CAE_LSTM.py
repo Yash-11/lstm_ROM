@@ -51,12 +51,12 @@ class ParamsManager:
         # model 
         self.seq_len = [10]
         self.num_lstm_layers = [1, 2]
-        self.latentDim = [50]
+        self.latentDim = [12]
         self.dropout = [0]
         self.AE_Model = [7]
 
         # training
-        self.numIters = [3001]
+        self.numIters = [1] #3001
         self.lr = [5e-4, 1e-4]
         self.batchSizeTrain = [15]
         self.epochStartTrain = [0000]
@@ -253,19 +253,20 @@ def automation(hp, experPaths):
 
     startSavingLogs(args, experPaths.run, logger)
     args.info(f'{hp.runName}')
-    rawData = LoadData(hp, experPaths, args)
+    # rawData = LoadData(hp, experPaths, args)
+    rawData = 0
 
     # save hyper params for the run
     sv_args = hp
     save_args(sv_args, experPaths.run)
     
-    if hp.reduce:
-        aePipeline = AEPipeline(AutoEncoder, hp, experPaths, rawData, AEDatasetClass, args)
-        aePipeline.train()
-        aePipeline.test()
-        resultsAE(hp)
-        LatentVecs = aePipeline.generateLatentVecs()  # (numSampTrainAE, latentDim)
-        rawData.loadLatentVecs()
+    # if hp.reduce:
+    #     aePipeline = AEPipeline(AutoEncoder, hp, experPaths, rawData, AEDatasetClass, args)
+    #     aePipeline.train()
+    #     aePipeline.test()
+    #     resultsAE(hp)
+    #     LatentVecs = aePipeline.generateLatentVecs()  # (numSampTrainAE, latentDim)
+    #     rawData.loadLatentVecs()
     
     # train
     modelPipeline = ModelPipeline(Model, hp, experPaths, rawData, DatasetClass, args)

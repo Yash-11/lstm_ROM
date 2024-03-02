@@ -36,7 +36,7 @@ class AEDatasetClass(Dataset):
         self.hp = hyperParams
 
 
-        rawData = self.rawData.data.T  # (maxNumTimeSteps, imDim)
+        rawData = self.rawData.data  # (maxNumTimeSteps, imDim)
         rawData, self.hp.meanAE, self.hp.stdAE = self.normalize(rawData)
 
         ln = rawData.shape[0]

@@ -232,7 +232,7 @@ class ModelPipeline():
             target = self.rescale(target, test_dataset.max, test_dataset.min)
 
             loss = T.mean(T.abs(predMu - target)/target, 2)*100
-            self.info(f'({batchIdx}) Testing loss: {loss}')
+            # self.info(f'({batchIdx}) Testing loss: {loss}')
 
             predMuLs.append(predMu)
             dataLs.append(target)

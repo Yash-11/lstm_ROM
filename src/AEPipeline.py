@@ -28,6 +28,9 @@ class AEPipeline():
         self.path = experPaths
 
         self.model = Model(hyperParams, args).to(args.device)
+        pytorch_total_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
+        self.info(pytorch_total_params)
+        
         self.loss = T.nn.MSELoss(reduction = 'sum')
 
         self.info(self)
@@ -104,6 +107,13 @@ class AEPipeline():
 
             pred, _ = self.model(input)  # (currentBatchSize, latentDim)
             loss = self.loss(pred, target)   
+
+            l2_lambda = 0.1
+            l2_norm = sum(T.abs(p).sum()
+                        for p in self.model.parameters())
+        
+            loss = loss + l2_lambda * l2_norm
+
                                               
             loss.backward()
             optimizer.step()
@@ -115,6 +125,7 @@ class AEPipeline():
     def train(self):
         hp = self.hp
 
+        #self.info(f'before training: {hp.loadAEWeightsEpoch}')
         train_dataset = self.dataset(self.rawData, 'train', self.path, hp, device=self.args.device, info=self.info)
         train_loader = DataLoader(train_dataset, batch_size=hp.batchSizeTrainAE, shuffle=True)
 
@@ -153,7 +164,7 @@ class AEPipeline():
         dd = self.hp.checkpointIntervalAE
         minValidLoss = min(losses['valid'][::dd])        
         hp.minValidAELossEpoch = losses['valid'].index(minValidLoss)
-        hp.loadAEWeightsEpoch = hp.minValidAELossEpoch
+        #hp.loadAEWeightsEpoch = hp.minValidAELossEpoch
 
     
     def savePredictions(self, predData, epoch, trainBool):
@@ -176,6 +187,7 @@ class AEPipeline():
 
         # ------------------------ Load saved weights --------------------------
         epoch = hp.loadAEWeightsEpoch
+        print("AE load epoch: ", epoch)
         self.loadModel(epoch)
         self.model.eval()
 
@@ -190,7 +202,7 @@ class AEPipeline():
 
             
             loss = T.mean(T.abs(pred - target)/target, 1)
-            self.info(f'({batchIdx}) Testing loss: {loss*100}')
+            # self.info(f'({batchIdx}) Testing loss: {loss*100}')
 
             predLs.append(pred)
             dataLs.append(target)
@@ -263,8 +275,9 @@ class AEPipeline():
         self.model.eval()
 
         pred = self.model(predLv[0])
-        target = dataset.rawData.data.T[hp.seq_len:hp.seq_len+hp.timeStepsUnroll]
+        target = dataset.rawData.data[hp.seq_len:hp.seq_len+hp.timeStepsUnroll]
 
+        print(self.hp.meanAE, self.hp.stdAE)
         pred = self.denormalize(pred, self.hp.meanAE, self.hp.stdAE)
 
         self.saveOutputs(pred, target)

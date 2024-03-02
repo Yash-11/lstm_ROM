@@ -35,6 +35,9 @@ class ModelPipeline():
         self.path = experPaths
 
         self.model = Model(hyperParams, args).to(args.device)
+        pytorch_total_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
+        self.info(pytorch_total_params)
+
         self.loss = T.nn.MSELoss(reduction = 'sum')
 
         self.info(self)
@@ -235,7 +238,7 @@ class ModelPipeline():
             target = self.rescale(target, test_dataset.max, test_dataset.min)
 
             loss = T.mean(T.abs(pred - target)/target, 2)*100
-            self.info(f'({batchIdx}) Testing loss: {loss}')
+            # self.info(f'({batchIdx}) Testing loss: {loss}')
 
             predLs.append(pred)
             dataLs.append(target)

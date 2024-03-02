@@ -193,7 +193,7 @@ class AEPipeline():
 
             
             loss = T.mean(T.abs(pred - target)/target, 1)
-            self.info(f'({batchIdx}) Testing loss: {loss*100}')
+            # self.info(f'({batchIdx}) Testing loss: {loss*100}')
 
             predLs.append(pred)
             dataLs.append(target)
@@ -284,25 +284,26 @@ class AEPipeline():
         predData = h5py.File(join(self.path.run, name), 'r') 
 
         # predLv [1, n_sampTest, latentDim]
-        predLv = T.tensor( predData['pred'][:], dtype=T.float32).to(self.args.device) 
-        targetLv = T.tensor( predData['target'][:], dtype=T.float32).to(self.args.device)
-        varLv = T.tensor( predData['var'][:], dtype=T.float32).to(self.args.device) 
+        # predLv = T.tensor( predData['pred'][:], dtype=T.float32).to(self.args.device) 
+        # targetLv = T.tensor( predData['target'][:], dtype=T.float32).to(self.args.device)
+        # varLv = T.tensor( predData['var'][:], dtype=T.float32).to(self.args.device) 
 
         # ------------------------ Load saved weights --------------------------
         epoch = hp.loadAEWeightsEpoch
         self.loadModel(epoch)
         self.model.eval()
 
-        n_sampTest, N = predData['pred'][0].shape
-        M = hp.imDim
+        print(predData['pred'].shape, predData['var'].shape, predData['rescaleMinMax'].shape, predData['target'].shape)
+        n_sampTest, N, _ = predData['pred'][0].shape
+        M = hp.imH 
 
-        mean = predData['pred'][0]  # [n_sampTest, N]
-        var0 = predData['var'][0]  # [n_sampTest, N]
+        mean = predData['pred'][0].reshape((n_sampTest, -1))  # [n_sampTest, N, N]
+        var0 = predData['var'][0].reshape((n_sampTest, -1))  # [n_sampTest, N, N]
         _min = predData['rescaleMinMax'][0]
         _max = predData['rescaleMinMax'][1]
 
         def rescale(x, max, min):
-            a = -0.5; b = 0.5
+            a = -0.9; b = 0.9
             x = (x-a)*(max- min)/(b-a)+min
             return x
 
@@ -335,13 +336,15 @@ class AEPipeline():
         #                         Unscented Transform
 
         if hp.sampling == 'unscented_transform':
-            meanUT = np.zeros((n_sampTest, M))
-            varUT = np.zeros((n_sampTest, M))
+            meanUT = np.zeros((n_sampTest, M*M))
+            varUT = np.zeros((n_sampTest, M*M))
             
-            sp = JulierSigmaPoints(n=N, kappa=.2)
+            sp = JulierSigmaPoints(n=N*N, kappa=.2)
             Wm, Wc = sp.Wm, sp.Wc
 
             for i in range(n_sampTest):
+
+                self.info(f"current time step: {i}")
         
                 x = mean[i][None]
                 P = np.diag(var0[i])  # [N, N]
@@ -350,11 +353,28 @@ class AEPipeline():
                     Xi = sp.sigma_points(x, P)  # [n_UT_Samp, N]
                 except:
                     breakpoint()
-                Xi = T.tensor(Xi, dtype=T.float32).to(self.args.device)
+                Xi = T.tensor(Xi, dtype=T.float32)
                 Yi = rescale(Xi, _min, _max)
-                Yi = self.model(Yi)  # [n_UT_Samp, M]
-                Yi = self.denormalize(Yi, self.hp.meanAE, self.hp.stdAE)
-                Yi = Yi.detach().cpu().numpy()
+
+                Yi = Yi.reshape((-1, N, N))
+                n_UT_Samp = Yi.shape[0]
+                YYi = T.zeros((n_UT_Samp, M*M))
+
+                bs = 100
+                for j in range(n_UT_Samp//bs):
+                    yy = Yi[j*bs:bs*(j+1)].to(self.args.device)
+                    YYi[j*bs:bs*(j+1)] = self.model(yy).reshape((bs, M*M)).detach().cpu()  # [n_UT_Samp, M, M]
+
+                j = n_UT_Samp//bs
+                yy = Yi[j*bs:n_UT_Samp].to(self.args.device)
+                YYi[j*bs:n_UT_Samp] = self.model(yy).reshape((n_UT_Samp%bs, M*M)).detach().cpu()  # [n_UT_Samp, M, M]
+
+                # YYi = self.model(Yi.reshape((-1, N, N)).to(self.args.device)).detach().cpu()
+
+                # Yi = Yi.reshape((-1, M*M))  # [n_UT_Samp, M*M]
+
+                Yi = self.denormalize(YYi, self.hp.meanAE, self.hp.stdAE)
+                Yi = Yi.numpy()
 
                 # xm [200,] ucov [200, 200]
                 xm, ucov = unscented_transform(Yi, Wm, Wc, 0)
@@ -362,8 +382,8 @@ class AEPipeline():
                 meanUT[i] = xm
                 varUT[i] = np.diag(ucov)
 
-            meanOut = meanUT
-            varOut = varUT
+            meanOut = meanUT.reshape((n_sampTest, M, M))
+            varOut = varUT.reshape((n_sampTest, M, M))
 
         if hp.sampling == 'mean_only':
             meanOut = self.model(rescale(predLv[0], _min, _max)).detach().cpu().numpy()
@@ -386,7 +406,7 @@ class AEPipeline():
         # plt.close()
 
         
-        target = dataset.rawData.data.T[hp.seq_len:hp.seq_len+hp.timeStepsUnroll]
+        target = dataset.rawData.data[hp.seq_len:hp.seq_len+hp.timeStepsUnroll]
 
         info = self.hp.predData_Info if hasattr(self.hp, 'predData_Info') else ''
         predData_Path = join(self.path.run, f'predHDataTest_epoch{loadWeightsEpoch}{info}.hdf5')

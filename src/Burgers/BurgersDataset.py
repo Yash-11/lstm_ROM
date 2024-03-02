@@ -48,7 +48,7 @@ class DatasetClass(Dataset):
         if self.hp.reduce:
             rawData = self.rawData.LatentVecs  # (timeSteps, latentDim)
         else:
-            rawData = self.rawData.data.T  # (timeSteps, imDim)
+            rawData = self.rawData.data  # (timeSteps, imDim)
 
         Dim = rawData.shape[1]
 

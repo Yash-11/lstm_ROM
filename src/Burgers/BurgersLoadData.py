@@ -47,14 +47,14 @@ class LoadData:
     def loadVertexValues(self):
         """ 
         Vars:
-            self.data (Tensor): (latentDim, timeSteps)
+            self.data (Tensor): (timeSteps, latentDim)
                 timeStep: num steps
         """
 
         data = np.load(join(self.dataDir, f'Burgers1d_Nx200_Nt{self.hp.numSampData}_Re{self.hp.Re}.00.npz'))
-        self.data = T.tensor(data['burgers'], dtype=T.float32)        
-        self.hp.imDim = self.data.shape[0]
-        self.hp.maxNumTimeSteps = self.data.shape[1]
+        self.data = T.tensor(data['burgers'].T, dtype=T.float32)        
+        self.hp.imDim = self.data.shape[1]
+        self.hp.maxNumTimeSteps = self.data.shape[0]
 
         self.hp.dataMin = self.data.min().item()
         self.hp.dataMax = self.data.max().item()

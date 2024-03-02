@@ -50,7 +50,7 @@ class ParamsManager:
         
         # model
         self.seq_len = [10, 20]
-        self.num_channels = [[32, 32], [64, 64], [32, 32, 32], [64, 64, 64]]
+        self.num_channels = [[64, 64, 64], [32, 32], [64, 64], [32, 32, 32]]
         self.latentDim = [50]
         self.kernel_size = [3]
         self.dropout = [0]
@@ -253,19 +253,20 @@ def automation(hp, experPaths):
 
     startSavingLogs(args, experPaths.run, logger)
     args.info(f'{hp.runName}')
-    rawData = LoadData(hp, experPaths, args)
+    # rawData = LoadData(hp, experPaths, args)
+    rawData = 0
 
     # save hyper params for the run
     sv_args = hp
     save_args(sv_args, experPaths.run)
     
-    if hp.reduce:
-        aePipeline = AEPipeline(AutoEncoder, hp, experPaths, rawData, AEDatasetClass, args)
-        aePipeline.train()
-        aePipeline.test()
-        resultsAE(hp)
-        LatentVecs = aePipeline.generateLatentVecs()  # (numSampTrainAE, latentDim)
-        rawData.loadLatentVecs()
+    # if hp.reduce:
+    #     aePipeline = AEPipeline(AutoEncoder, hp, experPaths, rawData, AEDatasetClass, args)
+    #     aePipeline.train()
+    #     aePipeline.test()
+    #     resultsAE(hp)
+    #     LatentVecs = aePipeline.generateLatentVecs()  # (numSampTrainAE, latentDim)
+    #     rawData.loadLatentVecs()
     
     # train
     modelPipeline = ModelPipeline(Model, hp, experPaths, rawData, DatasetClass, args)

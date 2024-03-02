@@ -55,6 +55,7 @@ class ParamsManager:
         self.latentDim = [10, 25, 50]
         self.dropout = [0]
         self.AE_Model = [1]
+        self.imDim = [200]
 
         # training
         self.numIters = [4001]
@@ -147,7 +148,7 @@ def HyperParams():
     hp.kernel_size = 3
     hp.latentDim = 32
     hp.dropout = 0
-    hp.AE_Model = 4
+    hp.AE_Model = 1
     
     # training
     hp.numIters = 2001
@@ -233,7 +234,8 @@ def automation(hp, experPaths):
     addPaths(experPaths, hp.runName)
 
     startSavingLogs(args, experPaths.run, logger)
-    rawData = LoadData(hp, experPaths, args)
+    # rawData = LoadData(hp, experPaths, args)
+    rawData = 0
 
     # save hyper params for the run
     sv_args = hp
@@ -241,12 +243,12 @@ def automation(hp, experPaths):
     
     if hp.reduce:
         aePipeline = AEPipeline(AutoEncoder, hp, experPaths, rawData, AEDatasetClass, args)
-        aePipeline.train()
-        aePipeline.test()
-        LatentVecs = aePipeline.generateLatentVecs()  # (numSampTrainAE, latentDim)
-        rawData.loadLatentVecs()
+    #     aePipeline.train()
+    #     aePipeline.test()
+    #     LatentVecs = aePipeline.generateLatentVecs()  # (numSampTrainAE, latentDim)
+    #     rawData.loadLatentVecs()
     
-    # train
+    # # train
     modelPipeline = ModelPipeline(Model, hp, experPaths, rawData, DatasetClass, args)
     modelPipeline.train()
 

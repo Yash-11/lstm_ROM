@@ -49,7 +49,7 @@ class DatasetClass(Dataset):
         if self.hp.reduce:
             rawData = self.rawData.LatentVecs  # (timeSteps, latentDim)
         else:
-            rawData = self.rawData.data.T  # (timeSteps, imDim)
+            rawData = self.rawData.data  # (timeSteps, imDim)
         
         Dim = rawData.shape[1]
         rawData, self.max, self.min = self.rescale(rawData, a = -0.5, b = 0.5)

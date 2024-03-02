@@ -142,7 +142,7 @@ def HyperParams():
 
     # model 
     hp.seq_len = 20
-    hp.num_channels = [100, 100, 100]
+    hp.num_channels = [200, 200, 200]
     hp.kernel_size = 3
     hp.latentDim = 125
     hp.dropout = 0
@@ -251,19 +251,20 @@ def automation(hp, experPaths):
 
     startSavingLogs(args, experPaths.run, logger)
     args.info(f'{hp.runName}')
-    rawData = LoadData(hp, experPaths, args)
+    # rawData = LoadData(hp, experPaths, args)
+    rawData = 0
 
     # save hyper params for the run
     sv_args = hp
     save_args(sv_args, experPaths.run)
     
-    if hp.reduce:
-        aePipeline = AEPipeline(AutoEncoder, hp, experPaths, rawData, AEDatasetClass, args)
-        aePipeline.train()
-        aePipeline.test()
-        resultsAE(hp)
-        LatentVecs = aePipeline.generateLatentVecs()  # (numSampTrainAE, latentDim)
-        rawData.loadLatentVecs()
+    # if hp.reduce:
+    #     aePipeline = AEPipeline(AutoEncoder, hp, experPaths, rawData, AEDatasetClass, args)
+    #     aePipeline.train()
+    #     aePipeline.test()
+    #     resultsAE(hp)
+    #     LatentVecs = aePipeline.generateLatentVecs()  # (numSampTrainAE, latentDim)
+    #     rawData.loadLatentVecs()
 
     # save hyper params for the run
     sv_args = hp
@@ -282,16 +283,16 @@ experPaths = Paths(experDir, args.os)
 
 # %% ---------------------------------------------------------------------------
 #                   Train all combinations of hyperParams
-manager = ParamsManager(experPaths)
-manager.iterateComb(experPaths)
+# manager = ParamsManager(experPaths)
+# manager.iterateComb(experPaths)
 
 # %% ---------------------------------------------------------------------------
 #                      Train particular hyperParam comb
 
-# hp = HyperParams()
-# hpDict = hp.__dict__
-# addName(hpDict)
-# automation(Dict2Class(hpDict), experPaths)
+hp = HyperParams()
+hpDict = hp.__dict__
+addName(hpDict)
+automation(Dict2Class(hpDict), experPaths)
 
 
 

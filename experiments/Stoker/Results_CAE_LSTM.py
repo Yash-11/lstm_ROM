@@ -70,13 +70,14 @@ def results(runName, minValidEpoch):
     # test 
     if hp.reduce:
         aePipeline = AEPipeline(AutoEncoder, hp, experPaths, rawData, AEDatasetClass, args)
-        # rawData.loadLatentVecs()
+        rawData.loadLatentVecs()
     
     modelPipeline = ModelPipeline(Model, hp, experPaths, rawData, DatasetClass, args)
     hp.predData_Info = f'_'
 
-    # modelPipeline.test()
-    # if hp.reduce: aePipeline.decodeLatentVecs()
+    modelPipeline.test()
+    if hp.reduce: 
+        aePipeline.decodeLatentVecs()
 
     # save hyper params for the run
     sv_args = hp
@@ -97,8 +98,8 @@ def results(runName, minValidEpoch):
         print(f'{join(experPaths.run, name)}')
         raise Exception(FileNotFoundError)
 
-    pred = predData['pred'][0]
-    target = predData['target'][0]
+    pred = predData['pred'][:]
+    target = predData['target'][:]
     loss = LA.norm((pred - target), axis=1) / LA.norm(target, axis=1) *100
     timeStepsUnroll = hp.numSampTrain +hp.seq_len*2+ np.arange(0, hp.timeStepsUnroll, 10)
 
@@ -114,7 +115,7 @@ def results(runName, minValidEpoch):
     plotParams = {'tStepModelPlot':[2]*hp.numSampTest, 'v_min':hp.dataMin, 'v_max':hp.dataMax}
     plotData = {'data': target}
     Plots().imgPlot(plotData, Dict2Class(plotParams), savePath)
-    exit()
+    # exit()
 
     # --------------------------------------------------------------------------
     #                        l2 relative error plot
@@ -162,7 +163,7 @@ df = df.reset_index()
 # %% ---------------------------------------------------------------------------
 #                           test particular run
 
-name = 'results_CAE_lstm_ld125_sql10_lr0.0001_trSmp250_bs15_CUVW4'
+name = 'results_CAE_lstm_ld125_sql20_lr0.0003_trSmp250_bs16_8PA67'
 # minValidEpoch = df.loc[df['name'] == name, 'minValidEpoch'].values[0] 
 # results(name, int(minValidEpoch))
-results(name, 2350)
+results(name, 10)

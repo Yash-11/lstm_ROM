@@ -76,8 +76,8 @@ def results(runName, minValidEpoch):
     modelPipeline = ModelPipeline(Model, hp, experPaths, rawData, DatasetClass, args)
     hp.predData_Info = f'_'
 
-    # modelPipeline.test()
-    # if hp.reduce: aePipeline.decodeLatentVecs()
+    modelPipeline.test()
+    if hp.reduce: aePipeline.decodeLatentVecs()
 
     # save hyper params for the run
     sv_args = hp
@@ -169,3 +169,5 @@ name = 'results_CAE_CNN_Re300_ld4_sql10_krs3_lr0.0001_trSmp150_ch5050_bs15_8PA67
 # minValidEpoch = df.loc[df['name'] == name, 'minValidEpoch'].values[0] 
 # results(name, int(minValidEpoch))
 results(name, 2150)
+
+# %%

@@ -47,15 +47,14 @@ class LoadData:
     def loadVertexValues(self):
         """ 
         Vars:
-            self.data (Tensor): (latentDim, timeSteps)
+            self.data (Tensor): (timeSteps, latentDim)
                 timeStep: num steps
         """
 
-        # data = np.load(join(self.dataDir, f'stoker_dataPOD.npy'))
-        data = np.load(join(self.dataDir, f'stoker_data.npy')).T
+        data = np.load(join(self.dataDir, f'stoker_data.npy'))
         self.data = T.tensor(data, dtype=T.float32)        
-        self.hp.imDim = self.data.shape[0]
-        self.hp.maxNumTimeSteps = self.data.shape[1]
+        self.hp.imDim = self.data.shape[1]
+        self.hp.maxNumTimeSteps = self.data.shape[0]
         
         self.hp.dataMin = self.data.min().item()
         self.hp.dataMax = self.data.max().item()

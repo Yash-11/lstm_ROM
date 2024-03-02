@@ -50,11 +50,12 @@ class ParamsManager:
         
         # model 
         self.seq_len = [10]
-        self.num_channels = [[200, 200], [50, 50, 50], [100, 100, 100]]
+        self.num_channels = [[200, 200], [50, 50], [100, 100, 100]]
         self.kernel_size = [3, 5]
         self.latentDim = [1]
         self.dropout = [0]
-        self.AE_Model = [1, 2, 3, 4]
+        self.AE_Model = [7]
+        self.imDim = [200]
 
         # training
         self.numIters = [3001]
@@ -288,7 +289,7 @@ experPaths = Paths(experDir, args.os)
 # manager.iterateComb(experPaths)
 
 # %% ---------------------------------------------------------------------------
-#                      Train particular hyperParam comb
+#                      Train particular(best) hyperParam comb
 
 hp = HyperParams()
 hpDict = hp.__dict__
@@ -296,5 +297,4 @@ addName(hpDict)
 automation(Dict2Class(hpDict), experPaths)
 
 
-
-
+# %%

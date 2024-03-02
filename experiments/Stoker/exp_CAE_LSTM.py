@@ -147,14 +147,14 @@ def HyperParams():
     hp.AE_Model = 7
     
     # training
-    hp.numIters = 2001
+    hp.numIters = 11
     hp.lr = 3e-4
     hp.batchSizeTrain = 16
     hp.epochStartTrain = 0000
     hp.weight_decay = 1e-5
 
     # testing
-    hp.loadWeightsEpoch = 500
+    hp.loadWeightsEpoch = 10
     hp.batchSizeTest = 1
     hp.timeStepsUnroll = 450
 
@@ -171,16 +171,16 @@ def HyperParams():
     hp.saveLogs = 1
     hp.saveInterval = 20
     hp.logInterval = 10
-    hp.checkpointInterval = 50
+    hp.checkpointInterval = 10
 
     # AEtraining
-    hp.numItersAE = 3001
+    hp.numItersAE = 11
     hp.lrAE = 0.0003
     hp.batchSizeTrainAE = 50
     hp.epochStartTrainAE = 0
 
     # AEtesting
-    hp.loadAEWeightsEpoch = 3000
+    hp.loadAEWeightsEpoch = 10
     hp.batchSizeTestAE = 100
     hp.batchSizeEncode = 500
 
@@ -191,7 +191,7 @@ def HyperParams():
 
     # logging
     hp.logIntervalAE = 100
-    hp.checkpointIntervalAE = 1000
+    hp.checkpointIntervalAE = 10
     return hp
 
 
@@ -245,19 +245,20 @@ def automation(hp, experPaths):
 
     startSavingLogs(args, experPaths.run, logger)
     args.info(f'{hp.runName}')
-    rawData = LoadData(hp, experPaths, args)
+    # rawData = LoadData(hp, experPaths, args)
+    rawData = 0
 
     # save hyper params for the run
     sv_args = hp
     save_args(sv_args, experPaths.run)
     
-    if hp.reduce:
-        aePipeline = AEPipeline(AutoEncoder, hp, experPaths, rawData, AEDatasetClass, args)
-        aePipeline.train()
-        aePipeline.test()
-        resultsAE(hp)
-        LatentVecs = aePipeline.generateLatentVecs()  # (numSampTrainAE, latentDim)
-        rawData.loadLatentVecs()
+    # if hp.reduce:
+    #     aePipeline = AEPipeline(AutoEncoder, hp, experPaths, rawData, AEDatasetClass, args)
+    #     aePipeline.train()
+    #     aePipeline.test()
+    #     resultsAE(hp)
+    #     LatentVecs = aePipeline.generateLatentVecs()  # (numSampTrainAE, latentDim)
+    #     rawData.loadLatentVecs()
     
     # train
     modelPipeline = ModelPipeline(Model, hp, experPaths, rawData, DatasetClass, args)

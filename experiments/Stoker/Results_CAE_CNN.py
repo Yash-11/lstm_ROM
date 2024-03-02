@@ -76,8 +76,9 @@ def results(runName, minValidEpoch):
     modelPipeline = ModelPipeline(Model, hp, experPaths, rawData, DatasetClass, args)
     hp.predData_Info = f'_'
 
-    # modelPipeline.test()
-    # if hp.reduce: aePipeline.decodeLatentVecs()
+    modelPipeline.test()
+    if hp.reduce: 
+        aePipeline.decodeLatentVecs()
 
     # save hyper params for the run
     sv_args = hp
@@ -98,8 +99,9 @@ def results(runName, minValidEpoch):
         print(f'{join(experPaths.run, name)}')
         raise Exception(FileNotFoundError)
 
-    pred = predData['pred'][0]
-    target = predData['target'][0]
+    pred = predData['pred'][:]
+    target = predData['target'][:]
+    print(pred.shape, target.shape)
     loss = LA.norm((pred - target), axis=1) / LA.norm(target, axis=1) *100
 
     timeStepsUnroll = hp.numSampTrain +hp.seq_len*2+ np.arange(0, hp.timeStepsUnroll, 10)
@@ -170,7 +172,7 @@ df = df.reset_index()
 # %% ---------------------------------------------------------------------------
 #                           test particular run
 
-name = 'resultsFinal_CAE_CNN_ld4_sql20_krs3_lr0.0003_trSmp250_ch100100100_bs16_8PA67' 
+name = 'results_CAE_CNN_ld125_sql20_krs3_lr0.0003_trSmp250_ch100100100_bs16_8PA67' 
 # minValidEpoch = df.loc[df['name'] == name, 'minValidEpoch'].values[0] 
 # results(name, int(minValidEpoch)) 
-results(name, 2000)
+results(name, 10)
